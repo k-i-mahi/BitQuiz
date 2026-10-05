@@ -42,8 +42,10 @@ export function createApp(): Express {
     }),
   );
 
+  // Reports which commit is running (Render sets RENDER_GIT_COMMIT), handy for checking a deploy went out.
+  const commit = process.env.RENDER_GIT_COMMIT?.slice(0, 7) ?? process.env.GIT_COMMIT?.slice(0, 7) ?? 'local';
   app.get('/healthz', (_req, res) => {
-    res.json({ status: 'ok' });
+    res.json({ status: 'ok', commit });
   });
 
   app.get('/readyz', async (_req, res) => {
