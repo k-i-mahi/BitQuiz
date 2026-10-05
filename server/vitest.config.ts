@@ -11,6 +11,7 @@ export default defineConfig({
       NODE_ENV: 'test',
       HAS_DATABASE: hasDatabase ? '1' : '',
       DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://unused:unused@localhost:1/unused',
+      DIRECT_URL: process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? 'postgresql://unused:unused@localhost:1/unused',
       SESSION_SECRET: process.env.SESSION_SECRET ?? 'test-secret-that-is-long-enough-for-validation',
       ANSWER_GRACE_MS: '1000',
       LATENCY_CAP_MS: '500',

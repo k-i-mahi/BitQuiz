@@ -55,7 +55,7 @@ Images, audio, video, free-text answers, fill-in-the-blank, numeric answers, mat
 | Logging | pino | Structured server logs |
 | Tests | Vitest + Supertest + Node load-test script | |
 | Packaging | Docker + docker-compose | Same build locally and in production |
-| Hosting | Railway (always-on app + managed PostgreSQL) | Supports persistent WebSocket connections |
+| Hosting | Render free web service + Neon free PostgreSQL | Free; supports persistent WebSocket connections (see docs/DEPLOY_RENDER.md) |
 | CI | GitHub Actions | Typecheck, test, build on every push |
 
 The whole application is **one server process**. It serves the API, the real-time connections, and the website files from a single address.
@@ -665,13 +665,14 @@ website/
 
 | Name | Example | Notes |
 | --- | --- | --- |
-| `DATABASE_URL` | `postgresql://…` | From Railway PostgreSQL |
+| `DATABASE_URL` | `postgresql://…` | Neon pooled connection + `&pgbouncer=true` |
+| `DIRECT_URL` | `postgresql://…` | Neon direct connection (migrations) |
 | `SESSION_SECRET` | 64 random characters | |
 | `PUBLIC_URL` | `https://bitquiz.example.com` | Used in QR code and join link |
 | `ANSWER_GRACE_MS` | `1000` | |
 | `LATENCY_CAP_MS` | `500` | |
 | `NODE_ENV` | `production` | |
-| `PORT` | `3000` | Set by Railway |
+| `PORT` | `3000` | Set by Render |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | | First owner account; change password after first login |
 
 ### 15.2 Local development
@@ -681,21 +682,14 @@ website/
 3. `npm run db:migrate && npm run db:seed`
 4. `npm run dev`
 
-### 15.3 Production on Railway
+### 15.3 Production on Render + Neon (free)
 
-1. Push the project to a private GitHub repository.
-2. Railway → New Project → Deploy from GitHub (builds the `Dockerfile`).
-3. Add a **PostgreSQL** service and link its `DATABASE_URL` to the app.
-4. Set the environment variables. Choose the region closest to Bangladesh.
-5. The start command runs `prisma migrate deploy`, then starts the server.
-6. Health check path: `/readyz`.
-7. Use an always-on plan with **exactly one instance**.
-8. Optional custom domain; Railway provides HTTPS.
+Step-by-step: [DEPLOY_RENDER.md](DEPLOY_RENDER.md). Render builds the `Dockerfile` from `render.yaml` (one free instance in Singapore); the database is a free Neon project. Run the 300-player load test against it before the event; if the free CPU is not enough, run on a venue laptop or upgrade Render for the event month.
 
 ### 15.4 Backups and rollback
 
-- Railway database backups turned on, plus a manual `pg_dump` on the morning of the event.
-- Rollback: redeploy the previous deployment from the Railway dashboard.
+- Neon keeps a short history for point-in-time restore; also take a manual `pg_dump` on the morning of the event.
+- Rollback: redeploy the previous deploy from the Render dashboard.
 - No deployments or database changes in the 24 hours before the event.
 
 ### 15.5 Local network fallback
@@ -732,7 +726,7 @@ The same `docker-compose.yml` can run on one laptop. Phones and the projector jo
 | 8 | Participant join (Name + Roll) and answering | Full flow on a real phone | 3–4 |
 | 9 | GM console | Whole quiz runnable with the keyboard | 4–5 |
 | 10 | Projector | Readable from the back of a room | 3 |
-| 11 | Deploy to Railway | Public URL works on mobile data | 2 |
+| 11 | Deploy to Render + Neon | Public URL works on mobile data | 2 |
 | 12 | Load test and fixes | Pass criteria met | 2–3 |
 
 **Total: about 33–41 hours of focused work**, followed by a rehearsal with real phones. Deploy at step 11 even if the design still needs polish.

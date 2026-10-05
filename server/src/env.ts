@@ -4,8 +4,10 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  DIRECT_URL: z.string().min(1, 'DIRECT_URL is required (use the same value as DATABASE_URL without a pooler)'),
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters'),
-  PUBLIC_URL: z.url().default('http://localhost:5173'),
+  /** Falls back to the URL Render assigns the service, so a fresh deploy needs no extra setting. */
+  PUBLIC_URL: z.url().default(process.env.RENDER_EXTERNAL_URL ?? 'http://localhost:5173'),
   ANSWER_GRACE_MS: z.coerce.number().int().min(0).max(5000).default(1000),
   LATENCY_CAP_MS: z.coerce.number().int().min(0).max(2000).default(500),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),

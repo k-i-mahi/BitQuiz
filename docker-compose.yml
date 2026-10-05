@@ -31,6 +31,7 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://bitquiz:${POSTGRES_PASSWORD:-bitquiz}@db:5432/bitquiz?schema=public
+      DIRECT_URL: postgresql://bitquiz:${POSTGRES_PASSWORD:-bitquiz}@db:5432/bitquiz?schema=public
       SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in .env}
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-}

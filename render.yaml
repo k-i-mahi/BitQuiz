@@ -1,0 +1,29 @@
+# Render Blueprint: Dashboard → New → Blueprint → pick this repository.
+# The database lives on Neon (free, permanent); see docs/DEPLOY_RENDER.md.
+services:
+  - type: web
+    name: bitquiz
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # /healthz doesn't touch the database, so health checks don't keep Neon awake.
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    envVars:
+      # Neon pooled connection string + "&pgbouncer=true"
+      - key: DATABASE_URL
+        sync: false
+      # Neon direct (non-pooled) connection string, used for migrations
+      - key: DIRECT_URL
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: SEED_ADMIN_EMAIL
+        sync: false
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
+      - key: SEED_ORG_NAME
+        value: IEEE CS KUET
+      # PUBLIC_URL defaults to the service's onrender.com address; set it only for a custom domain.

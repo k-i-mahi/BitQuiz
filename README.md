@@ -18,14 +18,14 @@ Built for IEEE CS KUET. Designed for 100–300 participants in one hall.
 
 ## Tech stack
 
-| Layer    | Choice                                                   |
-| -------- | -------------------------------------------------------- |
-| Language | TypeScript (npm workspaces: `shared`, `server`, `web`)   |
-| Backend  | Node.js 22, Express 5, Socket.IO 4, Zod                  |
-| Database | PostgreSQL 16, Prisma 6                                  |
-| Frontend | React 19, Vite 7, Tailwind CSS 4, Motion, React Router 7 |
-| Tests    | Vitest, Supertest, socket.io-client, load-test script    |
-| Delivery | Docker (multi-stage, non-root), GitHub Actions, Railway  |
+| Layer    | Choice                                                        |
+| -------- | ------------------------------------------------------------- |
+| Language | TypeScript (npm workspaces: `shared`, `server`, `web`)        |
+| Backend  | Node.js 22, Express 5, Socket.IO 4, Zod                       |
+| Database | PostgreSQL 16, Prisma 6                                       |
+| Frontend | React 19, Vite 7, Tailwind CSS 4, Motion, React Router 7      |
+| Tests    | Vitest, Supertest, socket.io-client, load-test script         |
+| Delivery | Docker (multi-stage, non-root), GitHub Actions, Render + Neon |
 
 One server process serves the API, the WebSocket connections and the built website from a single origin.
 
@@ -93,13 +93,11 @@ Empty `max_points`, `min_points` and `time_limit` use the round defaults. The im
 
 ## Deployment
 
-### Railway (recommended)
+### Render + Neon (free)
 
-1. Create a project from this GitHub repository. `railway.json` builds the `Dockerfile` and health-checks `/readyz`.
-2. Add a PostgreSQL service and reference its `DATABASE_URL` in the app service.
-3. Set `SESSION_SECRET`, `PUBLIC_URL` (the app's public URL), `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`.
-4. Deploy. On start the container applies migrations and creates the first owner if none exists.
-5. Keep **one** always-on instance. Timers and live connections live in that one process.
+The repository includes a Render Blueprint ([`render.yaml`](render.yaml)): one free Docker web service in Singapore, with the database on Neon's free plan. Step-by-step guide, free-plan behaviour and the pre-event load test: **[docs/DEPLOY_RENDER.md](docs/DEPLOY_RENDER.md)**.
+
+In short: create a Neon project, copy its pooled and direct connection strings, then in Render choose **New → Blueprint**, pick this repository and fill in `DATABASE_URL`, `DIRECT_URL`, `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD`. Keep a single instance: timers and live connections live in that one process.
 
 ### Docker Compose (VPS or a laptop on the venue network)
 
@@ -127,7 +125,7 @@ shared/   Rules shared by server and browser: scoring, state transitions, valida
 server/   Express API, Socket.IO hub, game engine and timers, Prisma schema and migrations
 web/      React app: landing, participant (/play), console, projector (/screen), admin
 tools/    Load-test script
-docs/     Project plan and event checklist
+docs/     Project plan, event checklist and deployment guide
 ```
 
 See [docs/PLAN.md](docs/PLAN.md) for the design and the event-day checklist.

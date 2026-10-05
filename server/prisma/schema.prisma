@@ -4,8 +4,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  /// Runtime connection. On Neon use the pooled ("-pooler") URL with ?pgbouncer=true&sslmode=require.
+  url       = env("DATABASE_URL")
+  /// Direct (non-pooled) connection used by migrations. Same as DATABASE_URL when no pooler is used.
+  directUrl = env("DIRECT_URL")
 }
 
 enum AdminRole {
