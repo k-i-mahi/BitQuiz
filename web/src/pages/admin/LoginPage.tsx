@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { LogIn } from 'lucide-react';
-import { Logo } from '@/components/Logo';
+import { AuthShell } from './AuthShell';
 import { Button } from '@/components/ui/button';
 import { FieldError, Input, Label } from '@/components/ui/input';
 import { api, errorMessage } from '@/lib/api';
@@ -30,46 +30,43 @@ export function LoginPage() {
   };
 
   return (
-    <div className="grid-lines grid min-h-dvh place-items-center px-5">
-      <div className="w-full max-w-sm">
-        <Logo className="mb-8 justify-center" size="lg" />
-        <form
-          onSubmit={submit}
-          className="space-y-4 rounded-3xl border border-line bg-surface/85 p-7 shadow-2xl backdrop-blur"
-        >
-          <div>
-            <h1 className="text-xl font-bold">Organizer login</h1>
-            <p className="text-sm text-muted">Manage competitions and run the live console.</p>
+    <AuthShell title="Organizer login" subtitle="Organizer accounts are by invitation from an owner.">
+      <form onSubmit={submit} className="space-y-4">
+        <div>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="username"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <Label htmlFor="password" className="mb-0">
+              Password
+            </Label>
+            <Link to="/admin/forgot-password" className="text-sm text-accent hover:underline">
+              Forgot password?
+            </Link>
           </div>
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="username"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              aria-invalid={Boolean(error)}
-            />
-            <FieldError>{error}</FieldError>
-          </div>
-          <Button type="submit" variant="primary" size="lg" className="w-full" loading={loading}>
-            <LogIn className="size-4" aria-hidden /> Log in
-          </Button>
-        </form>
-      </div>
-    </div>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            aria-invalid={Boolean(error)}
+          />
+          <FieldError>{error}</FieldError>
+        </div>
+        <Button type="submit" variant="primary" size="lg" className="w-full" loading={loading}>
+          <LogIn className="size-4" aria-hidden /> Log in
+        </Button>
+      </form>
+    </AuthShell>
   );
 }

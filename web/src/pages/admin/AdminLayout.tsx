@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { NavLink, Outlet, useNavigate, useOutletContext } from 'react-router';
-import { KeyRound, LogOut, Trophy, Users } from 'lucide-react';
+import { LogOut, MailWarning, ShieldCheck, Trophy, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import type { AdminUserView } from '@bitquiz/shared';
 import { Logo } from '@/components/Logo';
@@ -9,7 +9,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { FieldError, Input, Label } from '@/components/ui/input';
 import { FullPageSpinner } from '@/components/ui/spinner';
 import { api, errorMessage } from '@/lib/api';
-import { logout, useAdminSession } from '@/lib/auth';
+import { logout, useAdminSessionState } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
 export function useAdmin(): AdminUserView {
@@ -17,9 +17,9 @@ export function useAdmin(): AdminUserView {
 }
 
 export function AdminLayout() {
-  const admin = useAdminSession();
+  const [admin, setAdmin] = useAdminSessionState();
   const navigate = useNavigate();
-  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
 
   if (!admin) return <FullPageSpinner />;
 
@@ -40,24 +40,19 @@ export function AdminLayout() {
               <Trophy className="size-4" aria-hidden /> Competitions
             </NavLink>
             {admin.role === 'OWNER' && (
-              <NavLink to="/admin/admins" className={link}>
-                <Users className="size-4" aria-hidden /> Admins
+              <NavLink to="/admin/team" className={link}>
+                <ShieldCheck className="size-4" aria-hidden /> Team & access
               </NavLink>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Change password"
-              title="Change password"
-              onClick={() => setPasswordOpen(true)}
-            >
-              <KeyRound className="size-4" />
+            <Button variant="ghost" size="sm" onClick={() => setAccountOpen(true)} title={admin.email}>
+              <UserRound className="size-4" aria-hidden />
+              <span className="hidden max-w-32 truncate md:inline">{admin.name ?? admin.email}</span>
             </Button>
             <Button
               variant="ghost"
               size="icon"
               aria-label="Log out"
-              title={`Log out ${admin.email}`}
+              title="Log out"
               onClick={async () => {
                 await logout();
                 navigate('/admin/login');
@@ -68,73 +63,153 @@ export function AdminLayout() {
           </nav>
         </div>
       </header>
+      {!admin.emailVerified && <VerifyEmailBanner email={admin.email} />}
       <main className="mx-auto max-w-6xl px-5 py-8">
         <Outlet context={admin} />
       </main>
-      <ChangePasswordDialog open={passwordOpen} onClose={() => setPasswordOpen(false)} />
+      <AccountDialog open={accountOpen} onClose={() => setAccountOpen(false)} admin={admin} onUpdated={setAdmin} />
     </div>
   );
 }
 
-function ChangePasswordDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+function VerifyEmailBanner({ email }: { email: string }) {
+  const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
+
+  const send = async () => {
+    setState('sending');
+    try {
+      await api('/auth/verify-email/send', { method: 'POST' });
+      setState('sent');
+    } catch (error) {
+      toast.error(errorMessage(error));
+      setState('idle');
+    }
+  };
+
+  return (
+    <div className="border-b border-warn/30 bg-warn/10">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-5 py-2.5 text-sm text-warn">
+        <MailWarning className="size-4 shrink-0" aria-hidden />
+        <span className="flex-1">
+          {state === 'sent'
+            ? `We sent a confirmation link to ${email}. Open it to verify your address.`
+            : `Please verify ${email} so password resets and invitations reach you.`}
+        </span>
+        {state !== 'sent' && (
+          <Button size="sm" variant="warn" loading={state === 'sending'} onClick={send}>
+            Send verification email
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AccountDialog({
+  open,
+  onClose,
+  admin,
+  onUpdated,
+}: {
+  open: boolean;
+  onClose: () => void;
+  admin: AdminUserView;
+  onUpdated: (admin: AdminUserView) => void;
+}) {
+  const [name, setName] = useState(admin.name ?? '');
+  const [savingName, setSavingName] = useState(false);
   const [currentPassword, setCurrent] = useState('');
   const [newPassword, setNew] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [savingPassword, setSavingPassword] = useState(false);
 
-  const submit = async (event: FormEvent) => {
+  const saveName = async (event: FormEvent) => {
     event.preventDefault();
-    setSaving(true);
-    setError(null);
+    setSavingName(true);
+    try {
+      onUpdated(await api<AdminUserView>('/auth/me', { method: 'PATCH', body: { name } }));
+      toast.success('Name saved');
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  const savePassword = async (event: FormEvent) => {
+    event.preventDefault();
+    setSavingPassword(true);
+    setPasswordError(null);
     try {
       await api('/auth/password', { method: 'POST', body: { currentPassword, newPassword } });
       toast.success('Password changed. Other sessions were signed out.');
       setCurrent('');
       setNew('');
-      onClose();
-    } catch (err) {
-      setError(errorMessage(err));
+    } catch (error) {
+      setPasswordError(errorMessage(error));
     } finally {
-      setSaving(false);
+      setSavingPassword(false);
     }
   };
 
   return (
-    <Dialog open={open} onClose={onClose} title="Change password">
-      <form onSubmit={submit} className="space-y-4">
-        <div>
-          <Label htmlFor="current-password">Current password</Label>
-          <Input
-            id="current-password"
-            type="password"
-            autoComplete="current-password"
-            value={currentPassword}
-            onChange={(e) => setCurrent(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="new-password">New password (min 8 characters)</Label>
-          <Input
-            id="new-password"
-            type="password"
-            autoComplete="new-password"
-            minLength={8}
-            value={newPassword}
-            onChange={(e) => setNew(e.target.value)}
-            required
-          />
-          <FieldError>{error}</FieldError>
-        </div>
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary" loading={saving}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title="Your account"
+      description={`${admin.email} · ${admin.role === 'OWNER' ? 'Owner' : 'Organizer'}`}
+    >
+      <div className="space-y-6">
+        <form onSubmit={saveName} className="flex items-end gap-2">
+          <div className="flex-1">
+            <Label htmlFor="profile-name">Name</Label>
+            <Input
+              id="profile-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              minLength={2}
+              maxLength={60}
+              required
+            />
+          </div>
+          <Button type="submit" loading={savingName} disabled={name.trim() === (admin.name ?? '')}>
             Save
           </Button>
-        </div>
-      </form>
+        </form>
+
+        <form onSubmit={savePassword} className="space-y-4 border-t border-line pt-5">
+          <h3 className="text-sm font-semibold">Change password</h3>
+          <div>
+            <Label htmlFor="current-password">Current password</Label>
+            <Input
+              id="current-password"
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(e) => setCurrent(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="new-password">New password (at least 8 characters)</Label>
+            <Input
+              id="new-password"
+              type="password"
+              autoComplete="new-password"
+              minLength={8}
+              value={newPassword}
+              onChange={(e) => setNew(e.target.value)}
+              required
+            />
+            <FieldError>{passwordError}</FieldError>
+          </div>
+          <div className="flex justify-end">
+            <Button type="submit" variant="primary" loading={savingPassword}>
+              Change password
+            </Button>
+          </div>
+        </form>
+      </div>
     </Dialog>
   );
 }

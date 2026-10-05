@@ -3,8 +3,11 @@ import { useLocation, useNavigate } from 'react-router';
 import type { AdminUserView } from '@bitquiz/shared';
 import { ApiError, api } from './api';
 
-/** Loads the signed-in admin; sends the visitor to the login page if there is none. */
-export function useAdminSession(): AdminUserView | null {
+/**
+ * Loads the signed-in admin and lets the page update it (e.g. after editing the profile).
+ * Sends the visitor to the login page if there is no valid session.
+ */
+export function useAdminSessionState(): [AdminUserView | null, (admin: AdminUserView) => void] {
   const navigate = useNavigate();
   const location = useLocation();
   const [admin, setAdmin] = useState<AdminUserView | null>(null);
@@ -21,7 +24,11 @@ export function useAdminSession(): AdminUserView | null {
     return () => controller.abort();
   }, [navigate, location.pathname]);
 
-  return admin;
+  return [admin, setAdmin];
+}
+
+export function useAdminSession(): AdminUserView | null {
+  return useAdminSessionState()[0];
 }
 
 export async function logout(): Promise<void> {

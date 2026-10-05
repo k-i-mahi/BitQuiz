@@ -14,6 +14,22 @@ const router = createBrowserRouter([
   { path: '/screen/:token', lazy: async () => ({ Component: (await import('./pages/screen/ScreenPage')).ScreenPage }) },
   { path: '/admin/login', lazy: async () => ({ Component: (await import('./pages/admin/LoginPage')).LoginPage }) },
   {
+    path: '/admin/forgot-password',
+    lazy: async () => ({ Component: (await import('./pages/admin/AccountLinkPages')).ForgotPasswordPage }),
+  },
+  {
+    path: '/admin/reset-password',
+    lazy: async () => ({ Component: (await import('./pages/admin/AccountLinkPages')).ResetPasswordPage }),
+  },
+  {
+    path: '/admin/accept-invite',
+    lazy: async () => ({ Component: (await import('./pages/admin/AccountLinkPages')).AcceptInvitePage }),
+  },
+  {
+    path: '/admin/verify-email',
+    lazy: async () => ({ Component: (await import('./pages/admin/AccountLinkPages')).VerifyEmailPage }),
+  },
+  {
     path: '/admin',
     lazy: async () => ({ Component: (await import('./pages/admin/AdminLayout')).AdminLayout }),
     children: [
@@ -33,7 +49,7 @@ const router = createBrowserRouter([
         path: 'competitions/:id/results',
         lazy: async () => ({ Component: (await import('./pages/admin/ResultsPage')).ResultsPage }),
       },
-      { path: 'admins', lazy: async () => ({ Component: (await import('./pages/admin/AdminsPage')).AdminsPage }) },
+      { path: 'team', lazy: async () => ({ Component: (await import('./pages/admin/TeamPage')).TeamPage }) },
     ],
   },
   {
