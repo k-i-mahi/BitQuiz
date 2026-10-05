@@ -1,0 +1,181 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AdminRole {
+  OWNER
+  OPERATOR
+}
+
+enum CompetitionStatus {
+  DRAFT
+  LOBBY
+  LIVE
+  FINISHED
+  ARCHIVED
+}
+
+enum QuestionStatus {
+  PENDING
+  SHOWN
+  OPEN
+  CLOSED
+  REVEALED
+  VOID
+}
+
+enum DisplayMode {
+  LOBBY
+  QUESTION
+  LEADERBOARD
+  HOLD
+  FINAL
+}
+
+model Organization {
+  id           String        @id @default(uuid()) @db.Uuid
+  name         String
+  slug         String        @unique
+  createdAt    DateTime      @default(now())
+  admins       AdminUser[]
+  competitions Competition[]
+}
+
+model AdminUser {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String       @unique
+  passwordHash   String
+  role           AdminRole    @default(OPERATOR)
+  /// Bumped on password change to invalidate existing sessions.
+  sessionVersion Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model Competition {
+  id                String            @id @default(uuid()) @db.Uuid
+  organizationId    String            @db.Uuid
+  organization      Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title             String
+  joinCode          String            @unique
+  status            CompetitionStatus @default(DRAFT)
+  rollMinLength     Int               @default(7)
+  rollMaxLength     Int               @default(7)
+  rollDigitsOnly    Boolean           @default(true)
+  allowLateJoin     Boolean           @default(true)
+  displayMode       DisplayMode       @default(LOBBY)
+  holdMessage       String?
+  /// Set while the public leaderboard is frozen; public ranks only count questions revealed before it.
+  leaderboardFrozenAt DateTime?
+  currentQuestionId String?           @db.Uuid
+  projectorToken    String            @unique
+  /// Incremented on every state change; commands must quote the revision they were issued against.
+  revision          Int               @default(0)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  rounds       Round[]
+  participants Participant[]
+  actionLogs   ActionLog[]
+
+  @@index([organizationId, status])
+}
+
+model Round {
+  id                  String      @id @default(uuid()) @db.Uuid
+  competitionId       String      @db.Uuid
+  competition         Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  order               Int
+  title               String
+  defaultTimeLimitSec Int         @default(20)
+  defaultMaxPoints    Int         @default(100)
+  defaultMinPoints    Int         @default(50)
+  wrongPenalty        Int         @default(0)
+  createdAt           DateTime    @default(now())
+  questions           Question[]
+
+  @@index([competitionId, order])
+}
+
+model Question {
+  id              String         @id @default(uuid()) @db.Uuid
+  roundId         String         @db.Uuid
+  round           Round          @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  order           Int
+  prompt          String
+  code            String?
+  codeLanguage    String?
+  /// [{ "id": "A", "text": "..." }, ...]
+  options         Json
+  correctOptionId String
+  explanation     String?
+  timeLimitSec    Int?
+  maxPoints       Int?
+  minPoints       Int?
+  status          QuestionStatus @default(PENDING)
+  shownAt         DateTime?
+  openedAt        DateTime?
+  endsAt          DateTime?
+  closedAt        DateTime?
+  revealedAt      DateTime?
+  createdAt       DateTime       @default(now())
+  answers         Answer[]
+
+  @@index([roundId, order])
+}
+
+model Participant {
+  id            String      @id @default(uuid()) @db.Uuid
+  competitionId String      @db.Uuid
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  name          String
+  roll          String
+  /// SHA-256 of the device token; null after the GM resets the device.
+  tokenHash     String?     @unique
+  latencyMs     Int         @default(0)
+  kicked        Boolean     @default(false)
+  joinedAt      DateTime    @default(now())
+  lastSeenAt    DateTime    @default(now())
+  answers       Answer[]
+
+  @@unique([competitionId, roll])
+}
+
+model Answer {
+  id              String      @id @default(uuid()) @db.Uuid
+  participantId   String      @db.Uuid
+  participant     Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  questionId      String      @db.Uuid
+  question        Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  optionId        String
+  clientRequestId String
+  receivedAt      DateTime    @default(now())
+  responseMs      Int
+  isCorrect       Boolean
+  points          Int
+
+  @@unique([participantId, questionId])
+  @@index([questionId])
+}
+
+model ActionLog {
+  id            BigInt      @id @default(autoincrement())
+  competitionId String      @db.Uuid
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  actor         String
+  action        String
+  payload       Json?
+  at            DateTime    @default(now())
+
+  @@index([competitionId, at])
+}
