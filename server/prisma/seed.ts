@@ -17,7 +17,10 @@ async function main() {
     throw new Error('Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD (min 8 characters) before seeding.');
   }
 
-  const slug = orgName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const slug = orgName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
   const organization = await prisma.organization.upsert({
     where: { slug },
     update: {},
@@ -53,9 +56,7 @@ async function main() {
             order: round,
             title: `Round ${round}`,
             questions: {
-              create: questions
-                .filter((q) => q.round === round)
-                .map(({ round: _round, ...q }) => q),
+              create: questions.filter((q) => q.round === round).map(({ round: _round, ...q }) => q),
             },
           })),
         },

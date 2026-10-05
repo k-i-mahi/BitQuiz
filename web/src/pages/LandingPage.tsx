@@ -63,7 +63,14 @@ export function LandingPage() {
           <form onSubmit={submit} className="mt-6 space-y-4">
             <Input
               value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
+              onChange={(e) =>
+                setCode(
+                  e.target.value
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, '')
+                    .slice(0, 6),
+                )
+              }
               placeholder="K7Q2XM"
               aria-label="Join code"
               autoCapitalize="characters"

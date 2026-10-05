@@ -12,17 +12,17 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bitquiz}
       POSTGRES_DB: bitquiz
     ports:
-      - "127.0.0.1:${DB_PORT:-5432}:5432"
+      - '127.0.0.1:${DB_PORT:-5432}:5432'
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bitquiz -d bitquiz"]
+      test: ['CMD-SHELL', 'pg_isready -U bitquiz -d bitquiz']
       interval: 5s
       timeout: 3s
       retries: 10
 
   app:
-    profiles: ["app"]
+    profiles: ['app']
     build: .
     restart: unless-stopped
     depends_on:
@@ -37,7 +37,7 @@ services:
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
       SEED_ORG_NAME: ${SEED_ORG_NAME:-IEEE CS KUET}
     ports:
-      - "3000:3000"
+      - '3000:3000'
 
 volumes:
   db-data:

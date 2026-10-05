@@ -16,9 +16,7 @@ const cache = new Map<string, Promise<Boards>>();
  * questions revealed before that moment count (used for the frozen public board).
  */
 export async function computeTotals(competitionId: string, revealedBefore?: Date): Promise<ScoreTotals[]> {
-  const revealedFilter = revealedBefore
-    ? Prisma.sql`AND q."revealedAt" <= ${revealedBefore}`
-    : Prisma.empty;
+  const revealedFilter = revealedBefore ? Prisma.sql`AND q."revealedAt" <= ${revealedBefore}` : Prisma.empty;
   return prisma.$queryRaw<ScoreTotals[]>`
     SELECT p.id AS "participantId",
            p.name,

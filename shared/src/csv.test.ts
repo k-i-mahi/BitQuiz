@@ -47,7 +47,13 @@ describe('parseQuestionCsv', () => {
 
 describe('toCsv', () => {
   it('quotes special characters and neutralizes formulas', () => {
-    const out = toCsv(['a', 'b'], [['=1+1', 'x,"y"'], [5, null]]);
+    const out = toCsv(
+      ['a', 'b'],
+      [
+        ['=1+1', 'x,"y"'],
+        [5, null],
+      ],
+    );
     expect(out).toBe(`a,b\r\n'=1+1,"x,""y"""\r\n5,\r\n`);
   });
 });

@@ -2,6 +2,10 @@ import Papa from 'papaparse';
 import { CODE_LANGUAGES, OPTION_IDS, type CodeLanguage, type OptionId } from './enums';
 import { questionSchema, type QuestionInput } from './schemas';
 
+/** Byte-order mark: Excel needs it to read UTF-8 CSV files, so exports start with it and imports strip it. */
+export const UTF8_BOM = String.fromCharCode(0xfeff);
+const UTF8_BOM_RE = new RegExp(`^${UTF8_BOM}`);
+
 export const QUESTION_CSV_COLUMNS = [
   'round',
   'order',
@@ -41,7 +45,7 @@ const REQUIRED = ['round', 'question', 'option_a', 'option_b', 'correct'] as con
 
 /** Parses and validates a question CSV. Never throws; problems are reported per row. */
 export function parseQuestionCsv(text: string): QuestionCsvResult {
-  const parsed = Papa.parse<Record<string, string>>(text.replace(/^﻿/, ''), {
+  const parsed = Papa.parse<Record<string, string>>(text.replace(UTF8_BOM_RE, ''), {
     header: true,
     skipEmptyLines: 'greedy',
     transformHeader: (h) => h.trim().toLowerCase().replace(/\s+/g, '_'),
@@ -145,14 +149,58 @@ export const QUESTION_CSV_TEMPLATE = toCsv(
   [...QUESTION_CSV_COLUMNS],
   [
     [
-      1, 1, 'Which algorithm finds shortest paths in a graph with non-negative edge weights?', '', '',
-      'DFS', 'Dijkstra', 'Prim', 'Kruskal', '', '', 'B', 100, 50, 20,
+      1,
+      1,
+      'Which algorithm finds shortest paths in a graph with non-negative edge weights?',
+      '',
+      '',
+      'DFS',
+      'Dijkstra',
+      'Prim',
+      'Kruskal',
+      '',
+      '',
+      'B',
+      100,
+      50,
+      20,
       'Dijkstra repeatedly takes the closest unvisited vertex from a priority queue.',
     ],
-    [1, 2, "Dijkstra's algorithm can handle negative edge weights.", '', '', 'True', 'False', '', '', '', '', 'B', '', '', 15, ''],
     [
-      2, 1, 'What does this program print?', 'for (int i = 0; i < 3; i++)\n    printf("%d", i);', 'c',
-      '012', '123', '0123', 'Compile error', '', '', 'A', 200, 100, 30, '',
+      1,
+      2,
+      "Dijkstra's algorithm can handle negative edge weights.",
+      '',
+      '',
+      'True',
+      'False',
+      '',
+      '',
+      '',
+      '',
+      'B',
+      '',
+      '',
+      15,
+      '',
+    ],
+    [
+      2,
+      1,
+      'What does this program print?',
+      'for (int i = 0; i < 3; i++)\n    printf("%d", i);',
+      'c',
+      '012',
+      '123',
+      '0123',
+      'Compile error',
+      '',
+      '',
+      'A',
+      200,
+      100,
+      30,
+      '',
     ],
   ],
 );

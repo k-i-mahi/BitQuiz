@@ -17,7 +17,10 @@ const router = createBrowserRouter([
     path: '/admin',
     lazy: async () => ({ Component: (await import('./pages/admin/AdminLayout')).AdminLayout }),
     children: [
-      { index: true, lazy: async () => ({ Component: (await import('./pages/admin/CompetitionsPage')).CompetitionsPage }) },
+      {
+        index: true,
+        lazy: async () => ({ Component: (await import('./pages/admin/CompetitionsPage')).CompetitionsPage }),
+      },
       {
         path: 'competitions',
         lazy: async () => ({ Component: (await import('./pages/admin/CompetitionsPage')).CompetitionsPage }),

@@ -50,9 +50,15 @@ export function RunSheet({ state, send, busy }: Props) {
                       q.status === 'VOID' && 'opacity-50',
                     )}
                   >
-                    <span className={cn('size-2.5 shrink-0 rounded-full border-2', STATUS_DOT[q.status])} title={q.status} />
+                    <span
+                      className={cn('size-2.5 shrink-0 rounded-full border-2', STATUS_DOT[q.status])}
+                      title={q.status}
+                    />
                     <span className="tabular w-5 shrink-0 text-xs text-faint">{q.order}</span>
-                    <span className={cn('min-w-0 flex-1 truncate', q.status === 'VOID' && 'line-through')} title={q.prompt}>
+                    <span
+                      className={cn('min-w-0 flex-1 truncate', q.status === 'VOID' && 'line-through')}
+                      title={q.prompt}
+                    >
                       {q.prompt}
                     </span>
                     {canShow && (
@@ -133,7 +139,13 @@ function QuestionActions({
                 className="ml-auto"
                 disabled={busy || correct === question.correctOptionId}
                 onClick={async () => {
-                  if (await send({ type: 'REGRADE', questionId: question.id, correctOptionId: correct }, `Regraded to ${correct}`)) onClose();
+                  if (
+                    await send(
+                      { type: 'REGRADE', questionId: question.id, correctOptionId: correct },
+                      `Regraded to ${correct}`,
+                    )
+                  )
+                    onClose();
                 }}
               >
                 <RotateCcw className="size-4" aria-hidden /> Regrade to {correct}
@@ -146,7 +158,8 @@ function QuestionActions({
             <Button
               disabled={busy}
               onClick={async () => {
-                if (await send({ type: 'DUPLICATE_QUESTION', questionId: question.id }, 'Copy added after it')) onClose();
+                if (await send({ type: 'DUPLICATE_QUESTION', questionId: question.id }, 'Copy added after it'))
+                  onClose();
               }}
             >
               <CopyPlus className="size-4" aria-hidden /> Duplicate (re-ask later)

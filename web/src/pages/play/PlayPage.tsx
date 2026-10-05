@@ -43,7 +43,10 @@ export function PlayPage() {
         setPhase({
           kind: 'join',
           info: null,
-          error: error instanceof ApiError && error.status === 404 ? 'No quiz found with this code.' : 'Could not reach the server. Pull to refresh.',
+          error:
+            error instanceof ApiError && error.status === 404
+              ? 'No quiz found with this code.'
+              : 'Could not reach the server. Pull to refresh.',
         });
       }
     },

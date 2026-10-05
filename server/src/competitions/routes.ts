@@ -11,6 +11,7 @@ import {
   questionSchema,
   roundSchema,
   toCsv,
+  UTF8_BOM,
   type QuestionInput,
 } from '@bitquiz/shared';
 import { adminOf, requireAdmin } from '../auth/session';
@@ -132,7 +133,11 @@ competitionsRouter.patch('/:id', async (req, res) => {
 competitionsRouter.delete('/:id', async (req, res) => {
   const competition = await ownedCompetition(adminOf(req), req.params.id);
   if (competition.status !== 'DRAFT') {
-    throw new HttpError(409, ERROR_CODES.INVALID_TRANSITION, 'Only draft competitions can be deleted. Archive it instead.');
+    throw new HttpError(
+      409,
+      ERROR_CODES.INVALID_TRANSITION,
+      'Only draft competitions can be deleted. Archive it instead.',
+    );
   }
   await prisma.competition.delete({ where: { id: competition.id } });
   res.status(204).end();
@@ -393,7 +398,11 @@ competitionsRouter.get('/:id/leaderboard', async (req, res) => {
   const revealed = await prisma.question.count({
     where: { status: 'REVEALED', round: { competitionId: competition.id } },
   });
-  res.json({ competition: { id: competition.id, title: competition.title, status: competition.status }, revealed, rows: live });
+  res.json({
+    competition: { id: competition.id, title: competition.title, status: competition.status },
+    revealed,
+    rows: live,
+  });
 });
 
 competitionsRouter.get('/:id/log', async (req, res) => {
@@ -410,7 +419,7 @@ function sendCsv(res: Response, filename: string, body: string) {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   // BOM so Excel opens UTF-8 names (e.g. Bangla) correctly.
-  res.send(`﻿${body}`);
+  res.send(UTF8_BOM + body);
 }
 
 function slug(text: string): string {

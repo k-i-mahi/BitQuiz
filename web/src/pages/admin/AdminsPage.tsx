@@ -70,9 +70,7 @@ export function AdminsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Admins</h1>
-        <p className="text-sm text-muted">
-          Owners manage admins. Operators build competitions and run the console.
-        </p>
+        <p className="text-sm text-muted">Owners manage admins. Operators build competitions and run the console.</p>
       </div>
 
       <Card>
@@ -105,7 +103,11 @@ export function AdminsPage() {
             </div>
             <div>
               <Label htmlFor="a-role">Role</Label>
-              <Select id="a-role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as AdminRole })}>
+              <Select
+                id="a-role"
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value as AdminRole })}
+              >
                 <option value="OPERATOR">Operator</option>
                 <option value="OWNER">Owner</option>
               </Select>

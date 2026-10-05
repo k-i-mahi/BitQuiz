@@ -44,7 +44,13 @@ export function AdminLayout() {
                 <Users className="size-4" aria-hidden /> Admins
               </NavLink>
             )}
-            <Button variant="ghost" size="icon" aria-label="Change password" title="Change password" onClick={() => setPasswordOpen(true)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Change password"
+              title="Change password"
+              onClick={() => setPasswordOpen(true)}
+            >
               <KeyRound className="size-4" />
             </Button>
             <Button

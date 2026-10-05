@@ -48,7 +48,8 @@ export function QuestionDialog({ round, question, readOnly = false, onClose, onS
     maxPoints: optionalNumber(maxPoints) ?? round.defaultMaxPoints,
     minPoints: optionalNumber(minPoints) ?? round.defaultMinPoints,
   };
-  const ruleValid = effective.minPoints >= 1 && effective.minPoints <= effective.maxPoints && effective.timeLimitSec >= 5;
+  const ruleValid =
+    effective.minPoints >= 1 && effective.minPoints <= effective.maxPoints && effective.timeLimitSec >= 5;
 
   const removeOption = (index: number) => {
     const next = options.filter((_, i) => i !== index);
@@ -135,7 +136,12 @@ export function QuestionDialog({ round, question, readOnly = false, onClose, onS
             </label>
             {withCode && (
               <div className="mt-3 grid gap-3">
-                <Select value={codeLanguage} onChange={(e) => setCodeLanguage(e.target.value)} aria-label="Code language" className="w-48">
+                <Select
+                  value={codeLanguage}
+                  onChange={(e) => setCodeLanguage(e.target.value)}
+                  aria-label="Code language"
+                  className="w-48"
+                >
                   {CODE_LANGUAGES.map((l) => (
                     <option key={l} value={l}>
                       {l}
@@ -200,7 +206,12 @@ export function QuestionDialog({ round, question, readOnly = false, onClose, onS
               })}
             </div>
             <div className="mt-2 flex gap-2">
-              <Button size="sm" variant="ghost" disabled={options.length >= MAX_OPTIONS} onClick={() => setOptions([...options, ''])}>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={options.length >= MAX_OPTIONS}
+                onClick={() => setOptions([...options, ''])}
+              >
                 <Plus className="size-4" aria-hidden /> Add option
               </Button>
               <Button
@@ -219,15 +230,37 @@ export function QuestionDialog({ round, question, readOnly = false, onClose, onS
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <Label htmlFor="q-time">Time (s)</Label>
-              <Input id="q-time" type="number" min={5} max={300} value={timeLimit} onChange={(e) => setTimeLimit(e.target.value)} placeholder={`${round.defaultTimeLimitSec} (round)`} />
+              <Input
+                id="q-time"
+                type="number"
+                min={5}
+                max={300}
+                value={timeLimit}
+                onChange={(e) => setTimeLimit(e.target.value)}
+                placeholder={`${round.defaultTimeLimitSec} (round)`}
+              />
             </div>
             <div>
               <Label htmlFor="q-max">Max points</Label>
-              <Input id="q-max" type="number" min={1} value={maxPoints} onChange={(e) => setMaxPoints(e.target.value)} placeholder={`${round.defaultMaxPoints} (round)`} />
+              <Input
+                id="q-max"
+                type="number"
+                min={1}
+                value={maxPoints}
+                onChange={(e) => setMaxPoints(e.target.value)}
+                placeholder={`${round.defaultMaxPoints} (round)`}
+              />
             </div>
             <div>
               <Label htmlFor="q-min">Min points</Label>
-              <Input id="q-min" type="number" min={1} value={minPoints} onChange={(e) => setMinPoints(e.target.value)} placeholder={`${round.defaultMinPoints} (round)`} />
+              <Input
+                id="q-min"
+                type="number"
+                min={1}
+                value={minPoints}
+                onChange={(e) => setMinPoints(e.target.value)}
+                placeholder={`${round.defaultMinPoints} (round)`}
+              />
             </div>
           </div>
           <p className="-mt-2 text-xs text-muted">

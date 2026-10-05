@@ -18,6 +18,6 @@
   },
   "devDependencies": {
     "@types/papaparse": "^5.3.16",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.11"
   }
 }

@@ -59,7 +59,9 @@ answersRouter.post('/', requireParticipant, answerLimiter, async (req, res) => {
     throw new HttpError(
       409,
       acceptance.reason === 'TOO_LATE' ? ERROR_CODES.TOO_LATE : ERROR_CODES.NOT_ACCEPTING,
-      acceptance.reason === 'TOO_LATE' ? "Time's up — your answer arrived too late." : 'This question is not accepting answers.',
+      acceptance.reason === 'TOO_LATE'
+        ? "Time's up — your answer arrived too late."
+        : 'This question is not accepting answers.',
     );
   }
 
@@ -98,7 +100,9 @@ answersRouter.post('/', requireParticipant, answerLimiter, async (req, res) => {
     throw error;
   }
 
-  void prisma.participant.update({ where: { id: me.id }, data: { latencyMs: Math.round(latencyMs) } }).catch(() => undefined);
+  void prisma.participant
+    .update({ where: { id: me.id }, data: { latencyMs: Math.round(latencyMs) } })
+    .catch(() => undefined);
   void sendMe(competition.id, me.id).catch(() => undefined);
   requestBroadcast(competition.id);
   respond(input.optionId, false);

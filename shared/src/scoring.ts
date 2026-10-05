@@ -11,12 +11,7 @@ export interface ScoringRule {
  * Linear speed-based score. A correct answer earns between `minPoints` (at the deadline)
  * and `maxPoints` (instant); a wrong answer costs `wrongPenalty`.
  */
-export function computePoints(
-  isCorrect: boolean,
-  responseMs: number,
-  timeLimitMs: number,
-  rule: ScoringRule,
-): number {
+export function computePoints(isCorrect: boolean, responseMs: number, timeLimitMs: number, rule: ScoringRule): number {
   if (!isCorrect) return rule.wrongPenalty > 0 ? -rule.wrongPenalty : 0;
   const fraction = timeLimitMs > 0 ? clamp(responseMs / timeLimitMs, 0, 1) : 0;
   const points = rule.maxPoints - (rule.maxPoints - rule.minPoints) * fraction;
@@ -64,10 +59,7 @@ export interface RankedRow extends ScoreTotals {
 export function rankRows(rows: readonly ScoreTotals[]): RankedRow[] {
   const sorted = [...rows].sort(
     (a, b) =>
-      b.points - a.points ||
-      b.correct - a.correct ||
-      a.correctTimeMs - b.correctTimeMs ||
-      a.roll.localeCompare(b.roll),
+      b.points - a.points || b.correct - a.correct || a.correctTimeMs - b.correctTimeMs || a.roll.localeCompare(b.roll),
   );
   const ranked: RankedRow[] = [];
   sorted.forEach((row, index) => {

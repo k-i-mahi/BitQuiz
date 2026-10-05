@@ -33,7 +33,10 @@ export function LoginPage() {
     <div className="grid-lines grid min-h-dvh place-items-center px-5">
       <div className="w-full max-w-sm">
         <Logo className="mb-8 justify-center" size="lg" />
-        <form onSubmit={submit} className="space-y-4 rounded-3xl border border-line bg-surface/85 p-7 shadow-2xl backdrop-blur">
+        <form
+          onSubmit={submit}
+          className="space-y-4 rounded-3xl border border-line bg-surface/85 p-7 shadow-2xl backdrop-blur"
+        >
           <div>
             <h1 className="text-xl font-bold">Organizer login</h1>
             <p className="text-sm text-muted">Manage competitions and run the live console.</p>

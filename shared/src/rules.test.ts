@@ -73,9 +73,9 @@ describe('checkAcceptance', () => {
 
   it('accepts inside the grace window, even after auto-close', () => {
     expect(checkAcceptance({ ...base, receivedAt: 11_000 })).toEqual({ ok: true });
-    expect(
-      checkAcceptance({ ...base, receivedAt: 10_900, questionStatus: 'CLOSED', closedAt: 11_000 }),
-    ).toEqual({ ok: true });
+    expect(checkAcceptance({ ...base, receivedAt: 10_900, questionStatus: 'CLOSED', closedAt: 11_000 })).toEqual({
+      ok: true,
+    });
   });
 
   it('rejects after the grace window', () => {

@@ -104,10 +104,12 @@ async function authenticate(socket: Socket): Promise<SocketData | null> {
   if (auth.role === 'gm' && typeof auth.competitionId === 'string') {
     const admin = await adminFromCookieHeader(socket.handshake.headers.cookie);
     if (!admin) return null;
-    const competition = await prisma.competition.findFirst({
-      where: { id: auth.competitionId, organizationId: admin.organizationId },
-      select: { id: true },
-    }).catch(() => null);
+    const competition = await prisma.competition
+      .findFirst({
+        where: { id: auth.competitionId, organizationId: admin.organizationId },
+        select: { id: true },
+      })
+      .catch(() => null);
     return competition ? { role: 'gm', competitionId: competition.id } : null;
   }
 
@@ -132,7 +134,11 @@ async function authenticate(socket: Socket): Promise<SocketData | null> {
 async function onConnection(socket: BqSocket) {
   const { role, competitionId, participantId } = socket.data as SocketData;
   const roleRoom =
-    role === 'gm' ? room.gm(competitionId) : role === 'screen' ? room.screen(competitionId) : room.participants(competitionId);
+    role === 'gm'
+      ? room.gm(competitionId)
+      : role === 'screen'
+        ? room.screen(competitionId)
+        : room.participants(competitionId);
   await socket.join(roleRoom);
 
   // Clock sync: the client sends its time, we answer with ours.

@@ -172,7 +172,10 @@ async function apply(tx: Tx, c: Competition, command: Command, now: Date, actor:
       const base = Math.max(current.endsAt?.getTime() ?? now.getTime(), now.getTime());
       const endsAt = new Date(base + command.seconds * 1000);
       await tx.question.update({ where: { id: current.id }, data: { endsAt } });
-      return { schedule: { questionId: current.id, endsAt }, log: { questionId: current.id, seconds: command.seconds } };
+      return {
+        schedule: { questionId: current.id, endsAt },
+        log: { questionId: current.id, seconds: command.seconds },
+      };
     }
 
     case 'CLOSE_QUESTION': {
@@ -204,7 +207,8 @@ async function apply(tx: Tx, c: Competition, command: Command, now: Date, actor:
     }
 
     case 'REGRADE': {
-      if (c.status !== 'LIVE' && c.status !== 'FINISHED') throw invalid('Questions can only be regraded during or after the quiz');
+      if (c.status !== 'LIVE' && c.status !== 'FINISHED')
+        throw invalid('Questions can only be regraded during or after the quiz');
       const question = await findQuestion(tx, c, command.questionId);
       if (!canRegrade(question.status)) throw invalid('Only closed or revealed questions can be regraded');
       const options = question.options as Array<{ id: string }>;
@@ -324,12 +328,7 @@ function requireStatus(c: Competition, status: CompetitionStatus) {
   }
 }
 
-async function moveCompetition(
-  tx: Tx,
-  c: Competition,
-  to: CompetitionStatus,
-  data: Prisma.CompetitionUpdateInput,
-) {
+async function moveCompetition(tx: Tx, c: Competition, to: CompetitionStatus, data: Prisma.CompetitionUpdateInput) {
   if (!canMoveCompetition(c.status, to)) throw invalid(`Cannot move from ${c.status} to ${to}`);
   await tx.competition.update({ where: { id: c.id }, data: { ...data, status: to } });
 }

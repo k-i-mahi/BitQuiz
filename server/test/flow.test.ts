@@ -79,7 +79,9 @@ describe.skipIf(!hasDatabase)('full quiz flow (integration)', () => {
     baseUrl = `http://localhost:${(server.address() as AddressInfo).port}`;
 
     agent = request.agent(server);
-    const login = await agent.post('/api/auth/login').send({ email: `gm-${suffix}@test.local`, password: 'password123' });
+    const login = await agent
+      .post('/api/auth/login')
+      .send({ email: `gm-${suffix}@test.local`, password: 'password123' });
     expect(login.status).toBe(200);
   });
 

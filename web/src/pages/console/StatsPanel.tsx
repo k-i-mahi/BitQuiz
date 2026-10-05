@@ -38,7 +38,9 @@ export function StatsPanel({ state }: { state: GmState }) {
           )}
         </div>
         <ol className="max-h-[28rem] flex-1 divide-y divide-line overflow-y-auto">
-          {state.leaderboard.length === 0 && <li className="px-4 py-6 text-center text-sm text-muted">No scores yet</li>}
+          {state.leaderboard.length === 0 && (
+            <li className="px-4 py-6 text-center text-sm text-muted">No scores yet</li>
+          )}
           {state.leaderboard.slice(0, 50).map((row) => (
             <li key={row.participantId} className="flex items-center gap-3 px-4 py-2 text-sm">
               <span className="tabular w-6 text-right font-semibold text-muted">{row.rank}</span>
@@ -60,7 +62,13 @@ function Stat({ label, value, tone }: { label: string; value: string | number; t
   return (
     <div className="rounded-xl bg-surface-2 px-3 py-2">
       <dt className="text-xs text-faint">{label}</dt>
-      <dd className={cn('tabular font-display text-2xl font-bold', tone === 'good' && 'text-good', tone === 'warn' && 'text-warn')}>
+      <dd
+        className={cn(
+          'tabular font-display text-2xl font-bold',
+          tone === 'good' && 'text-good',
+          tone === 'warn' && 'text-warn',
+        )}
+      >
         {value}
       </dd>
     </div>

@@ -4,9 +4,7 @@ import { SOCKET_EVENTS, type AnyState, type ParticipantMe } from '@bitquiz/share
 import { ServerClock } from './clock';
 
 export type LiveAuth =
-  | { role: 'gm'; competitionId: string }
-  | { role: 'screen'; token: string }
-  | { role: 'participant'; token: string };
+  { role: 'gm'; competitionId: string } | { role: 'screen'; token: string } | { role: 'participant'; token: string };
 
 export type ConnectionStatus = 'connecting' | 'online' | 'offline' | 'denied';
 

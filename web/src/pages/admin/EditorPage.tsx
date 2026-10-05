@@ -61,9 +61,12 @@ export function EditorPage() {
   const confirmDelete = async () => {
     if (!toDelete) return;
     try {
-      await api(toDelete.kind === 'round' ? `/competitions/rounds/${toDelete.id}` : `/competitions/questions/${toDelete.id}`, {
-        method: 'DELETE',
-      });
+      await api(
+        toDelete.kind === 'round' ? `/competitions/rounds/${toDelete.id}` : `/competitions/questions/${toDelete.id}`,
+        {
+          method: 'DELETE',
+        },
+      );
       setToDelete(null);
       await load();
     } catch (error) {
@@ -88,10 +91,7 @@ export function EditorPage() {
               round(s) · {questionCount} question(s)
             </p>
           </div>
-          <Link
-            to={`/admin/competitions/${competition.id}/console`}
-            className={buttonVariants({ variant: 'primary' })}
-          >
+          <Link to={`/admin/competitions/${competition.id}/console`} className={buttonVariants({ variant: 'primary' })}>
             <Play className="size-4" aria-hidden /> Open console
           </Link>
         </div>
@@ -144,7 +144,9 @@ export function EditorPage() {
       <ConfirmDialog
         open={toDelete !== null}
         title={`Delete ${toDelete?.label ?? ''}?`}
-        description={toDelete?.kind === 'round' ? 'All questions in this round are deleted too.' : 'This cannot be undone.'}
+        description={
+          toDelete?.kind === 'round' ? 'All questions in this round are deleted too.' : 'This cannot be undone.'
+        }
         confirmLabel="Delete"
         onConfirm={confirmDelete}
         onCancel={() => setToDelete(null)}
@@ -267,7 +269,15 @@ interface RoundCardProps {
   onDeleteQuestion: (question: QuestionRow) => void;
 }
 
-function RoundCard({ round, editable, onChanged, onAddQuestion, onEditQuestion, onDeleteRound, onDeleteQuestion }: RoundCardProps) {
+function RoundCard({
+  round,
+  editable,
+  onChanged,
+  onAddQuestion,
+  onEditQuestion,
+  onDeleteRound,
+  onDeleteQuestion,
+}: RoundCardProps) {
   const [form, setForm] = useState({
     title: round.title,
     order: round.order,
@@ -277,14 +287,16 @@ function RoundCard({ round, editable, onChanged, onAddQuestion, onEditQuestion, 
     wrongPenalty: round.wrongPenalty,
   });
   const [saving, setSaving] = useState(false);
-  const dirty = JSON.stringify(form) !== JSON.stringify({
-    title: round.title,
-    order: round.order,
-    defaultTimeLimitSec: round.defaultTimeLimitSec,
-    defaultMaxPoints: round.defaultMaxPoints,
-    defaultMinPoints: round.defaultMinPoints,
-    wrongPenalty: round.wrongPenalty,
-  });
+  const dirty =
+    JSON.stringify(form) !==
+    JSON.stringify({
+      title: round.title,
+      order: round.order,
+      defaultTimeLimitSec: round.defaultTimeLimitSec,
+      defaultMaxPoints: round.defaultMaxPoints,
+      defaultMinPoints: round.defaultMinPoints,
+      wrongPenalty: round.wrongPenalty,
+    });
 
   const save = async () => {
     setSaving(true);

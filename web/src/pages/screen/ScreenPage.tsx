@@ -104,14 +104,21 @@ function View({ state, clock }: { state: ScreenState; clock: ServerClock }) {
     case 'HOLD':
       return (
         <div className="grid flex-1 place-items-center text-center">
-          <h1 className="max-w-[80vw] text-[5vw] font-bold leading-tight">{state.competition.holdMessage || 'Short break'}</h1>
+          <h1 className="max-w-[80vw] text-[5vw] font-bold leading-tight">
+            {state.competition.holdMessage || 'Short break'}
+          </h1>
         </div>
       );
     case 'FINAL':
       return <Final rows={state.leaderboard} />;
     default:
       return state.question ? (
-        <Question question={state.question} clock={clock} answered={state.answeredCount} total={state.participantCount} />
+        <Question
+          question={state.question}
+          clock={clock}
+          answered={state.answeredCount}
+          total={state.participantCount}
+        />
       ) : (
         <div className="grid flex-1 place-items-center text-center">
           <div>
@@ -139,7 +146,9 @@ function Lobby({ state }: { state: ScreenState }) {
         <ol className="mt-[4vh] space-y-[2vh] text-[2vw] text-muted">
           <li>
             <span className="text-fg">1.</span> Scan the QR code, or open{' '}
-            <span className="font-mono text-fg">{state.joinUrl.replace(/^https?:\/\//, '').replace(/\/play\/.*/, '')}</span>
+            <span className="font-mono text-fg">
+              {state.joinUrl.replace(/^https?:\/\//, '').replace(/\/play\/.*/, '')}
+            </span>
           </li>
           <li>
             <span className="text-fg">2.</span> Enter the code{' '}
@@ -153,20 +162,39 @@ function Lobby({ state }: { state: ScreenState }) {
         </ol>
         <p className="mt-[5vh] flex items-center gap-3 text-[2.4vw]">
           <Users className="size-[2.4vw] text-accent" aria-hidden />
-          <motion.span key={state.participantCount} initial={{ scale: 1.3 }} animate={{ scale: 1 }} className="tabular font-display font-bold">
+          <motion.span
+            key={state.participantCount}
+            initial={{ scale: 1.3 }}
+            animate={{ scale: 1 }}
+            className="tabular font-display font-bold"
+          >
             {state.participantCount}
           </motion.span>
           <span className="text-muted">joined</span>
         </p>
       </div>
       <div className="rounded-[2vw] bg-white p-[1.2vw] shadow-[0_0_80px_-10px_rgb(34_211_238/0.5)]">
-        {qr ? <img src={qr} alt={`QR code for ${state.joinUrl}`} className="size-[30vw] max-h-[60vh] max-w-[60vh]" /> : <div className="size-[30vw]" />}
+        {qr ? (
+          <img src={qr} alt={`QR code for ${state.joinUrl}`} className="size-[30vw] max-h-[60vh] max-w-[60vh]" />
+        ) : (
+          <div className="size-[30vw]" />
+        )}
       </div>
     </div>
   );
 }
 
-function Question({ question, clock, answered, total }: { question: QuestionView; clock: ServerClock; answered: number; total: number }) {
+function Question({
+  question,
+  clock,
+  answered,
+  total,
+}: {
+  question: QuestionView;
+  clock: ServerClock;
+  answered: number;
+  total: number;
+}) {
   const remaining = useRemaining(question, clock);
   const revealed = question.status === 'REVEALED';
   const counts = question.distribution ?? {};
@@ -197,10 +225,14 @@ function Question({ question, clock, answered, total }: { question: QuestionView
         <TimerBar remainingMs={remaining} totalMs={question.timeLimitSec * 1000} className="h-[1vh]" />
       )}
 
-      <h1 className={cn('font-semibold leading-tight', question.code ? 'text-[2.6vw]' : 'text-[3.4vw]')}>{question.prompt}</h1>
+      <h1 className={cn('font-semibold leading-tight', question.code ? 'text-[2.6vw]' : 'text-[3.4vw]')}>
+        {question.prompt}
+      </h1>
 
       <div className={cn('grid flex-1 gap-[2vw]', question.code ? 'grid-cols-[1.1fr_1fr]' : 'grid-cols-1')}>
-        {question.code && <CodeBlock code={question.code} language={question.codeLanguage} className="self-start text-[1.8vw]" />}
+        {question.code && (
+          <CodeBlock code={question.code} language={question.codeLanguage} className="self-start text-[1.8vw]" />
+        )}
         <div className={cn('grid content-start gap-[1.6vh]', !question.code && 'grid-cols-2')}>
           {question.options.map((option) => {
             const isCorrect = revealed && option.id === question.correctOptionId;
@@ -227,7 +259,9 @@ function Question({ question, clock, answered, total }: { question: QuestionView
                   />
                 )}
                 <OptionLetter id={option.id} className="relative size-[3.6vw] text-[1.8vw]" />
-                <span className={cn('relative flex-1 font-medium', many || question.code ? 'text-[1.9vw]' : 'text-[2.3vw]')}>
+                <span
+                  className={cn('relative flex-1 font-medium', many || question.code ? 'text-[1.9vw]' : 'text-[2.3vw]')}
+                >
                   {option.text}
                 </span>
                 {revealed && (
@@ -285,7 +319,9 @@ function Leaderboard({ rows, frozen }: { rows: LeaderboardEntry[]; frozen: boole
                 <span className="tabular w-[3vw] font-display text-[2.2vw] font-bold text-muted">{row.rank}</span>
                 <span className="flex-1 truncate text-[2.1vw] font-semibold">{row.name}</span>
                 <span className="font-mono text-[1.5vw] text-faint">{row.roll}</span>
-                <span className="tabular w-[9vw] text-right font-display text-[2.4vw] font-bold text-accent">{row.points}</span>
+                <span className="tabular w-[9vw] text-right font-display text-[2.4vw] font-bold text-accent">
+                  {row.points}
+                </span>
               </motion.li>
             ))}
           </ol>

@@ -22,9 +22,21 @@ const PRISM_LANGUAGE: Record<string, string> = {
 /** Syntax-highlighted code rendered as React elements (never as raw HTML). */
 export { Logo } from './Logo';
 
-export function CodeBlock({ code, language, className }: { code: string; language: string | null; className?: string }) {
+export function CodeBlock({
+  code,
+  language,
+  className,
+}: {
+  code: string;
+  language: string | null;
+  className?: string;
+}) {
   return (
-    <Highlight code={code.replace(/\s+$/, '')} language={PRISM_LANGUAGE[language ?? ''] ?? 'text'} theme={themes.nightOwl}>
+    <Highlight
+      code={code.replace(/\s+$/, '')}
+      language={PRISM_LANGUAGE[language ?? ''] ?? 'text'}
+      theme={themes.nightOwl}
+    >
       {({ tokens, getLineProps, getTokenProps }) => (
         <pre
           className={cn(
@@ -54,7 +66,15 @@ export function useRemaining(question: QuestionView | null, clock: ServerClock):
   return Math.max(0, new Date(question.endsAt).getTime() - clock.now());
 }
 
-export function TimerBar({ remainingMs, totalMs, className }: { remainingMs: number; totalMs: number; className?: string }) {
+export function TimerBar({
+  remainingMs,
+  totalMs,
+  className,
+}: {
+  remainingMs: number;
+  totalMs: number;
+  className?: string;
+}) {
   const fraction = totalMs > 0 ? Math.min(1, remainingMs / totalMs) : 0;
   const urgent = remainingMs <= 5_000;
   return (
@@ -74,7 +94,11 @@ export function TimerNumber({ remainingMs, className }: { remainingMs: number; c
   const seconds = Math.ceil(remainingMs / 1000);
   return (
     <span
-      className={cn('tabular font-display font-bold', remainingMs <= 5_000 && remainingMs > 0 && 'text-warn', className)}
+      className={cn(
+        'tabular font-display font-bold',
+        remainingMs <= 5_000 && remainingMs > 0 && 'text-warn',
+        className,
+      )}
       aria-live="off"
     >
       {seconds}

@@ -102,7 +102,9 @@ export function ImportPanel({ competitionId, hasQuestions, onImported }: Props) 
               <div className="flex flex-wrap items-center gap-3 text-sm">
                 <span className="font-medium">{fileName}</span>
                 <Badge tone={result.errors.length ? 'bad' : 'good'}>
-                  {result.errors.length ? `${result.errors.length} problem(s)` : `${result.questions.length} question(s) ready`}
+                  {result.errors.length
+                    ? `${result.errors.length} problem(s)`
+                    : `${result.questions.length} question(s) ready`}
                 </Badge>
                 <Button size="sm" variant="ghost" onClick={reset}>
                   Choose another file

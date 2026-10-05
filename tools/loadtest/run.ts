@@ -78,8 +78,14 @@ async function main() {
   });
 
   const header = 'round,order,question,option_a,option_b,option_c,option_d,correct,time_limit';
-  const rows = Array.from({ length: QUESTIONS }, (_, i) => `1,${i + 1},Load test question ${i + 1}?,w,x,y,z,B,${SECONDS}`);
-  await http(`/competitions/${id}/import`, { method: 'POST', body: { csv: [header, ...rows].join('\n'), mode: 'replace' } });
+  const rows = Array.from(
+    { length: QUESTIONS },
+    (_, i) => `1,${i + 1},Load test question ${i + 1}?,w,x,y,z,B,${SECONDS}`,
+  );
+  await http(`/competitions/${id}/import`, {
+    method: 'POST',
+    body: { csv: [header, ...rows].join('\n'), mode: 'replace' },
+  });
   await http(`/competitions/${id}`, {
     method: 'PATCH',
     body: { title: 'Load test', rollMinLength: 4, rollMaxLength: 10, rollDigitsOnly: true, allowLateJoin: true },
@@ -123,18 +129,21 @@ async function main() {
         if (q?.status === 'OPEN' && !bot.answered.has(q.id)) {
           bot.answered.add(q.id);
           const option = q.options[Math.floor(Math.random() * q.options.length)]!.id;
-          setTimeout(async () => {
-            try {
-              await http('/answers', {
-                method: 'POST',
-                token,
-                body: { questionId: q.id, optionId: option, clientRequestId: `lt-${roll}-${q.id}` },
-              });
-              bot.accepted++;
-            } catch {
-              bot.rejected++;
-            }
-          }, Math.random() * (SECONDS - 1.5) * 1000);
+          setTimeout(
+            async () => {
+              try {
+                await http('/answers', {
+                  method: 'POST',
+                  token,
+                  body: { questionId: q.id, optionId: option, clientRequestId: `lt-${roll}-${q.id}` },
+                });
+                bot.accepted++;
+              } catch {
+                bot.rejected++;
+              }
+            },
+            Math.random() * (SECONDS - 1.5) * 1000,
+          );
         }
       });
       bots.push(bot);
@@ -142,13 +151,17 @@ async function main() {
   );
   await new Promise((r) => setTimeout(r, 1500));
   const connected = bots.filter((b) => b.socket.connected).length;
-  console.log(`Joined ${bots.length} players in ${((Date.now() - joinStart) / 1000).toFixed(1)}s, ${connected} connected`);
+  console.log(
+    `Joined ${bots.length} players in ${((Date.now() - joinStart) / 1000).toFixed(1)}s, ${connected} connected`,
+  );
 
   // --- Run ------------------------------------------------------------------------------------
   await command({ type: 'START' });
   const questionIds: string[] = [];
   for (let n = 0; n < QUESTIONS; n++) {
-    const pending = (await http<{ rounds: Array<{ questions: Array<{ id: string; status: string }> }> }>(`/competitions/${id}`)).rounds
+    const pending = (
+      await http<{ rounds: Array<{ questions: Array<{ id: string; status: string }> }> }>(`/competitions/${id}`)
+    ).rounds
       .flatMap((r) => r.questions)
       .find((q) => q.status === 'PENDING')!;
     questionIds.push(pending.id);
@@ -170,7 +183,9 @@ async function main() {
   const allDelays = [...delivery.values()].flat();
 
   console.log('\nResults');
-  console.log(`  State delivery to phones: p50 ${percentile(allDelays, 50)} ms, p95 ${percentile(allDelays, 95)} ms, max ${percentile(allDelays, 100)} ms (${allDelays.length} samples)`);
+  console.log(
+    `  State delivery to phones: p50 ${percentile(allDelays, 50)} ms, p95 ${percentile(allDelays, 95)} ms, max ${percentile(allDelays, 100)} ms (${allDelays.length} samples)`,
+  );
   for (const qid of questionIds) {
     const open = delivery.get(`${qid}:OPEN`)?.length ?? 0;
     if (open < connected) console.log(`  ! only ${open}/${connected} phones saw question ${qid} open`);

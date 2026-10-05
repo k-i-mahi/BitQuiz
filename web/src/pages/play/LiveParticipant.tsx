@@ -192,7 +192,9 @@ function QuestionScreen({
         <span className="truncate">
           {question.roundTitle} · Q{question.number}/{question.total}
         </span>
-        {question.status === 'OPEN' && remaining !== null && <TimerNumber remainingMs={remaining} className="text-2xl" />}
+        {question.status === 'OPEN' && remaining !== null && (
+          <TimerNumber remainingMs={remaining} className="text-2xl" />
+        )}
       </div>
       {question.status === 'OPEN' && remaining !== null && (
         <TimerBar remainingMs={remaining} totalMs={question.timeLimitSec * 1000} />
@@ -297,9 +299,11 @@ function Footer({
       />
     );
   }
-  if (submission?.status === 'failed' && !open) return <Notice tone="bad" title="Not counted" text={submission.message} />;
+  if (submission?.status === 'failed' && !open)
+    return <Notice tone="bad" title="Not counted" text={submission.message} />;
 
-  if (question.status === 'SHOWN') return <Notice tone="neutral" title="Get ready…" text="Answering opens in a moment." />;
+  if (question.status === 'SHOWN')
+    return <Notice tone="neutral" title="Get ready…" text="Answering opens in a moment." />;
   if (!open) return <Notice tone="neutral" title="Time's up" text="Waiting for the answer…" />;
 
   return (

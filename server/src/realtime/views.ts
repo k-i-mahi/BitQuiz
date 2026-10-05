@@ -1,11 +1,4 @@
-import type {
-  CompetitionView,
-  OptionId,
-  QuestionStatus,
-  QuestionView,
-  QuizOption,
-  ViewerRole,
-} from '@bitquiz/shared';
+import type { CompetitionView, OptionId, QuestionStatus, QuestionView, QuizOption, ViewerRole } from '@bitquiz/shared';
 
 export interface QuestionRecord {
   id: string;

@@ -29,7 +29,8 @@ export function ParticipantsDialog({ open, onClose, state, send }: Props) {
 
   const saveName = async () => {
     if (!editing) return;
-    if (await send({ type: 'EDIT_NAME', participantId: editing.id, name: editing.name }, 'Name updated')) setEditing(null);
+    if (await send({ type: 'EDIT_NAME', participantId: editing.id, name: editing.name }, 'Name updated'))
+      setEditing(null);
   };
 
   return (
@@ -42,7 +43,12 @@ export function ParticipantsDialog({ open, onClose, state, send }: Props) {
     >
       <div className="relative mb-3">
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" aria-hidden />
-        <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name or roll" className="pl-9" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search name or roll"
+          className="pl-9"
+        />
       </div>
       <p className="mb-2 text-xs text-muted">
         <strong className="text-fg">Reset device</strong> lets a participant who changed phones join again with the same
@@ -99,7 +105,13 @@ function Row({
               onEditSave();
             }}
           >
-            <Input value={editing} onChange={(e) => onEditChange(e.target.value)} className="h-8" maxLength={40} autoFocus />
+            <Input
+              value={editing}
+              onChange={(e) => onEditChange(e.target.value)}
+              className="h-8"
+              maxLength={40}
+              autoFocus
+            />
             <Button type="submit" size="icon" variant="ghost" aria-label="Save name">
               <Check className="size-4" />
             </Button>
@@ -116,7 +128,13 @@ function Row({
       {!p.kicked && !p.hasDevice && <Badge tone="warn">waiting to rejoin</Badge>}
       <div className="flex gap-1">
         {editing === null && !p.kicked && (
-          <Button size="icon" variant="ghost" aria-label={`Edit name of ${p.roll}`} title="Edit name" onClick={onEditStart}>
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label={`Edit name of ${p.roll}`}
+            title="Edit name"
+            onClick={onEditStart}
+          >
             <Pencil className="size-4" />
           </Button>
         )}
@@ -131,7 +149,11 @@ function Row({
           </Button>
         )}
         {p.kicked ? (
-          <Button size="sm" variant="ghost" onClick={() => send({ type: 'UNKICK', participantId: p.id }, `${p.roll} restored`)}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => send({ type: 'UNKICK', participantId: p.id }, `${p.roll} restored`)}
+          >
             <Undo2 className="size-4" aria-hidden /> Restore
           </Button>
         ) : (

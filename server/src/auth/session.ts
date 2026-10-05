@@ -45,7 +45,10 @@ const cookieOptions: CookieOptions = {
 };
 
 export function setSessionCookie(res: Response, adminId: string, sessionVersion: number): void {
-  const token = signSession({ uid: adminId, ver: sessionVersion, exp: Date.now() + SESSION_TTL_MS }, env.SESSION_SECRET);
+  const token = signSession(
+    { uid: adminId, ver: sessionVersion, exp: Date.now() + SESSION_TTL_MS },
+    env.SESSION_SECRET,
+  );
   res.cookie(SESSION_COOKIE, token, { ...cookieOptions, maxAge: SESSION_TTL_MS });
 }
 

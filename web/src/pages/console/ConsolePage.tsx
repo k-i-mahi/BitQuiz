@@ -87,7 +87,9 @@ export function ConsolePage() {
     [id],
   );
 
-  const step = state?.question ? nextStep(state.question.status, state.hasPendingQuestions) : nextStep(null, state?.hasPendingQuestions ?? false);
+  const step = state?.question
+    ? nextStep(state.question.status, state.hasPendingQuestions)
+    : nextStep(null, state?.hasPendingQuestions ?? false);
 
   const runMainStep = useCallback(() => {
     const s = stateRef.current;
@@ -201,7 +203,12 @@ export function ConsolePage() {
               title="Ready to open the lobby?"
               text="People can join once the lobby is open. Questions are checked first and locked while the lobby is open."
             >
-              <Button variant="primary" size="xl" loading={busy} onClick={() => send({ type: 'OPEN_LOBBY' }, 'Lobby is open')}>
+              <Button
+                variant="primary"
+                size="xl"
+                loading={busy}
+                onClick={() => send({ type: 'OPEN_LOBBY' }, 'Lobby is open')}
+              >
                 <DoorOpen className="size-5" aria-hidden /> Open lobby
               </Button>
             </PhaseCard>
@@ -213,7 +220,12 @@ export function ConsolePage() {
               text="The projector shows the QR code and join code. Start when everyone is in."
             >
               <div className="flex flex-wrap gap-3">
-                <Button variant="primary" size="xl" loading={busy} onClick={() => send({ type: 'START' }, 'Quiz started')}>
+                <Button
+                  variant="primary"
+                  size="xl"
+                  loading={busy}
+                  onClick={() => send({ type: 'START' }, 'Quiz started')}
+                >
                   <Rocket className="size-5" aria-hidden /> Start quiz
                 </Button>
                 <Button size="xl" variant="ghost" disabled={busy} onClick={() => send({ type: 'CLOSE_LOBBY' })}>
@@ -236,7 +248,10 @@ export function ConsolePage() {
 
           {competition.status === 'FINISHED' && (
             <PhaseCard title="Quiz finished" text="The projector shows the final podium. Download the results now.">
-              <Link to={`/admin/competitions/${id}/results`} className={buttonVariants({ variant: 'primary', size: 'xl' })}>
+              <Link
+                to={`/admin/competitions/${id}/results`}
+                className={buttonVariants({ variant: 'primary', size: 'xl' })}
+              >
                 <BarChart3 className="size-5" aria-hidden /> Open results
               </Link>
             </PhaseCard>
@@ -255,10 +270,14 @@ export function ConsolePage() {
                       size="sm"
                       variant={competition.displayMode === mode ? 'primary' : 'secondary'}
                       disabled={busy}
-                      onClick={() => send({ type: 'SET_DISPLAY', mode, message: mode === 'HOLD' ? holdMessage : undefined })}
+                      onClick={() =>
+                        send({ type: 'SET_DISPLAY', mode, message: mode === 'HOLD' ? holdMessage : undefined })
+                      }
                     >
                       {label}
-                      {key && <kbd className="ml-1 rounded bg-black/20 px-1 font-mono text-[10px] opacity-70">{key}</kbd>}
+                      {key && (
+                        <kbd className="ml-1 rounded bg-black/20 px-1 font-mono text-[10px] opacity-70">{key}</kbd>
+                      )}
                     </Button>
                   ))}
                 </div>
@@ -304,14 +323,26 @@ export function ConsolePage() {
               <span className={cn('text-xs', state.projectorConnected ? 'text-good' : 'text-warn')}>
                 ● {state.projectorConnected ? `${state.projectorConnected} connected` : 'not connected'}
               </span>
-              <code className="min-w-0 flex-1 truncate rounded-lg bg-surface-2 px-2 py-1 text-xs text-muted">{projectorUrl}</code>
+              <code className="min-w-0 flex-1 truncate rounded-lg bg-surface-2 px-2 py-1 text-xs text-muted">
+                {projectorUrl}
+              </code>
               <Button size="sm" variant="ghost" onClick={() => copy(projectorUrl, 'Projector link')}>
                 <Copy className="size-4" aria-hidden /> Copy
               </Button>
-              <a href={projectorUrl} target="_blank" rel="noreferrer" className={buttonVariants({ size: 'sm', variant: 'ghost' })}>
+              <a
+                href={projectorUrl}
+                target="_blank"
+                rel="noreferrer"
+                className={buttonVariants({ size: 'sm', variant: 'ghost' })}
+              >
                 <ExternalLink className="size-4" aria-hidden /> Open
               </a>
-              <Button size="sm" variant="ghost" onClick={rotateProjector} title="Create a new link; the old one stops working">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={rotateProjector}
+                title="Create a new link; the old one stops working"
+              >
                 <RefreshCw className="size-4" aria-hidden /> New link
               </Button>
             </div>
@@ -322,7 +353,9 @@ export function ConsolePage() {
       </div>
 
       <footer className="flex flex-wrap items-center gap-4 border-t border-line px-5 py-2 text-xs text-faint">
-        <span className={status === 'online' ? 'text-good' : 'text-warn'}>● Server {status === 'online' ? 'connected' : status}</span>
+        <span className={status === 'online' ? 'text-good' : 'text-warn'}>
+          ● Server {status === 'online' ? 'connected' : status}
+        </span>
         <span>Latency {clock.latencyMs} ms</span>
         <span className="ml-auto">
           <kbd className="font-mono">Space</kbd> next step · <kbd className="font-mono">L</kbd> leaderboard ·{' '}
@@ -330,7 +363,12 @@ export function ConsolePage() {
         </span>
       </footer>
 
-      <ParticipantsDialog open={participantsOpen} onClose={() => setParticipantsOpen(false)} state={state} send={send} />
+      <ParticipantsDialog
+        open={participantsOpen}
+        onClose={() => setParticipantsOpen(false)}
+        state={state}
+        send={send}
+      />
       <ConfirmDialog
         open={confirmFinish}
         title="Finish the quiz?"
@@ -357,4 +395,3 @@ function PhaseCard({ title, text, children }: { title: string; text: string; chi
     </Card>
   );
 }
-

@@ -47,7 +47,13 @@ export function CurrentQuestionPanel({ state, clock, busy, send, step, onMainSte
               </span>
               <Badge
                 tone={
-                  question.status === 'OPEN' ? 'good' : question.status === 'REVEALED' ? 'accent' : question.status === 'CLOSED' ? 'warn' : 'neutral'
+                  question.status === 'OPEN'
+                    ? 'good'
+                    : question.status === 'REVEALED'
+                      ? 'accent'
+                      : question.status === 'CLOSED'
+                        ? 'warn'
+                        : 'neutral'
                 }
               >
                 {question.status}
@@ -91,7 +97,10 @@ export function CurrentQuestionPanel({ state, clock, busy, send, step, onMainSte
                     )}
                   >
                     <div
-                      className={cn('absolute inset-y-0 left-0 transition-[width] duration-300', correct ? 'bg-good/15' : 'bg-surface-3')}
+                      className={cn(
+                        'absolute inset-y-0 left-0 transition-[width] duration-300',
+                        correct ? 'bg-good/15' : 'bg-surface-3',
+                      )}
                       style={{ width: `${pct}%` }}
                       aria-hidden
                     />
@@ -130,7 +139,12 @@ export function CurrentQuestionPanel({ state, clock, busy, send, step, onMainSte
             </Button>
           )}
           {!active && state.hasPendingQuestions && (
-            <Button size="lg" disabled={busy} onClick={() => send({ type: 'OPEN_QUESTION' })} title="Show the next question and start the timer at once">
+            <Button
+              size="lg"
+              disabled={busy}
+              onClick={() => send({ type: 'OPEN_QUESTION' })}
+              title="Show the next question and start the timer at once"
+            >
               <FastForward className="size-4" aria-hidden /> Show + open next
             </Button>
           )}
@@ -140,7 +154,13 @@ export function CurrentQuestionPanel({ state, clock, busy, send, step, onMainSte
             </Button>
           )}
           {question && question.status !== 'VOID' && (
-            <Button size="lg" variant="ghost" className="ml-auto text-bad hover:text-bad" disabled={busy} onClick={() => setConfirmVoid(true)}>
+            <Button
+              size="lg"
+              variant="ghost"
+              className="ml-auto text-bad hover:text-bad"
+              disabled={busy}
+              onClick={() => setConfirmVoid(true)}
+            >
               <Ban className="size-4" aria-hidden /> Void
             </Button>
           )}
@@ -154,7 +174,8 @@ export function CurrentQuestionPanel({ state, clock, busy, send, step, onMainSte
         confirmLabel="Void question"
         loading={busy}
         onConfirm={async () => {
-          if (question && (await send({ type: 'VOID_QUESTION', questionId: question.id }, 'Question voided'))) setConfirmVoid(false);
+          if (question && (await send({ type: 'VOID_QUESTION', questionId: question.id }, 'Question voided')))
+            setConfirmVoid(false);
         }}
         onCancel={() => setConfirmVoid(false)}
       />

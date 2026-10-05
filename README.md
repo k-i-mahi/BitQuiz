@@ -7,7 +7,7 @@ Built for IEEE CS KUET. Designed for 100–300 participants in one hall.
 ## Features
 
 - **Three live screens kept in sync:** Game Master console, projector, participant phones. Refreshing any screen restores it; nothing lives only in the browser.
-- **Join with Name and Roll.** Each roll can join once. A participant who changes phones gets back in after the Game Master clicks *Reset device*, and keeps their points.
+- **Join with Name and Roll.** Each roll can join once. A participant who changes phones gets back in after the Game Master clicks _Reset device_, and keeps their points.
 - **Server-authoritative timer.** Every phone counts down to the same server deadline, whatever its own clock says. A 1-second grace window absorbs network delay.
 - **Speed scoring with a floor.** A correct answer earns between `minPoints` (at the deadline) and `maxPoints` (instant). Optional negative marking per round. Each phone's network delay is measured and subtracted from its answer time (capped at 0.5 s).
 - **Safe live control.** Every command carries the state revision it was issued against, so a double-click never skips a question and a backup laptop can stay open.
@@ -18,14 +18,14 @@ Built for IEEE CS KUET. Designed for 100–300 participants in one hall.
 
 ## Tech stack
 
-| Layer | Choice |
-| --- | --- |
-| Language | TypeScript (npm workspaces: `shared`, `server`, `web`) |
-| Backend | Node.js 22, Express 5, Socket.IO 4, Zod |
-| Database | PostgreSQL 16, Prisma 6 |
+| Layer    | Choice                                                   |
+| -------- | -------------------------------------------------------- |
+| Language | TypeScript (npm workspaces: `shared`, `server`, `web`)   |
+| Backend  | Node.js 22, Express 5, Socket.IO 4, Zod                  |
+| Database | PostgreSQL 16, Prisma 6                                  |
 | Frontend | React 19, Vite 7, Tailwind CSS 4, Motion, React Router 7 |
-| Tests | Vitest, Supertest, socket.io-client, load-test script |
-| Delivery | Docker (multi-stage, non-root), GitHub Actions, Railway |
+| Tests    | Vitest, Supertest, socket.io-client, load-test script    |
+| Delivery | Docker (multi-stage, non-root), GitHub Actions, Railway  |
 
 One server process serves the API, the WebSocket connections and the built website from a single origin.
 
@@ -48,34 +48,34 @@ During development, phones on the same Wi-Fi can open `http://<your-computer-ip>
 
 ### Scripts
 
-| Command | What it does |
-| --- | --- |
-| `npm run dev` | Server (watch mode) and Vite dev server |
-| `npm run build` | Production web bundle and Prisma client |
-| `npm start` | Run the server (serves `web/dist` when built) |
-| `npm test` | Unit tests; integration tests too when `DATABASE_URL` is set |
-| `npm run typecheck` | TypeScript across all workspaces |
-| `npm run db:migrate` / `db:deploy` | Create a migration in development / apply migrations in production |
-| `npm run loadtest -- --players 300` | Simulated competition against a running server (see below) |
+| Command                             | What it does                                                       |
+| ----------------------------------- | ------------------------------------------------------------------ |
+| `npm run dev`                       | Server (watch mode) and Vite dev server                            |
+| `npm run build`                     | Production web bundle and Prisma client                            |
+| `npm start`                         | Run the server (serves `web/dist` when built)                      |
+| `npm test`                          | Unit tests; integration tests too when `DATABASE_URL` is set       |
+| `npm run typecheck`                 | TypeScript across all workspaces                                   |
+| `npm run db:migrate` / `db:deploy`  | Create a migration in development / apply migrations in production |
+| `npm run loadtest -- --players 300` | Simulated competition against a running server (see below)         |
 
 ### Environment variables
 
-| Name | Default | Purpose |
-| --- | --- | --- |
-| `DATABASE_URL` | — | PostgreSQL connection string |
-| `SESSION_SECRET` | — | Signs admin session cookies; at least 32 random characters |
-| `PUBLIC_URL` | `http://localhost:5173` | Base URL used in the join link and QR code |
-| `PORT` | `3000` | HTTP port |
-| `ANSWER_GRACE_MS` | `1000` | Extra time after the deadline for answers already in flight |
-| `LATENCY_CAP_MS` | `500` | Maximum network-delay compensation |
-| `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_ORG_NAME` | — | First owner account, created by the seed if it doesn't exist |
-| `DB_PORT` | `5432` | Host port for the docker-compose database |
+| Name                                                       | Default                 | Purpose                                                      |
+| ---------------------------------------------------------- | ----------------------- | ------------------------------------------------------------ |
+| `DATABASE_URL`                                             | —                       | PostgreSQL connection string                                 |
+| `SESSION_SECRET`                                           | —                       | Signs admin session cookies; at least 32 random characters   |
+| `PUBLIC_URL`                                               | `http://localhost:5173` | Base URL used in the join link and QR code                   |
+| `PORT`                                                     | `3000`                  | HTTP port                                                    |
+| `ANSWER_GRACE_MS`                                          | `1000`                  | Extra time after the deadline for answers already in flight  |
+| `LATENCY_CAP_MS`                                           | `500`                   | Maximum network-delay compensation                           |
+| `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_ORG_NAME` | —                       | First owner account, created by the seed if it doesn't exist |
+| `DB_PORT`                                                  | `5432`                  | Host port for the docker-compose database                    |
 
 ## Running a competition
 
 1. **Organizer login → New competition.** Set the roll format (e.g. exactly 7 digits).
 2. **Add questions.** Use the form, or download the CSV template, fill it in Excel or Google Sheets and import it.
-3. **Open console → Open lobby.** Open the projector link on the projector laptop and press *Go fullscreen*. It shows the QR code and join code.
+3. **Open console → Open lobby.** Open the projector link on the projector laptop and press _Go fullscreen_. It shows the QR code and join code.
 4. **Start quiz.** Press **Space** for the next step: show → open (timer starts) → close → reveal → next. `L` shows the leaderboard, `Q` the question, `H` a hold message.
 5. **Finish quiz**, then download the results from the Results page.
 
