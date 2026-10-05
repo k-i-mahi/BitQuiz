@@ -7,6 +7,8 @@ import {
   DoorOpen,
   ExternalLink,
   Monitor,
+  Pause,
+  Play,
   RefreshCw,
   Rocket,
   Snowflake,
@@ -24,7 +26,8 @@ import { ConnectionBanner, Logo } from '@/components/quiz';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ConfirmDialog } from '@/components/ui/dialog';
+import { ConfirmDialog, Dialog } from '@/components/ui/dialog';
+import { JoinQr } from '@/components/JoinQr';
 import { Input } from '@/components/ui/input';
 import { FullPageSpinner } from '@/components/ui/spinner';
 import { ApiError, api, errorMessage } from '@/lib/api';
@@ -40,7 +43,6 @@ const DISPLAY_MODES: Array<{ mode: DisplayMode; label: string; key: string }> = 
   { mode: 'LOBBY', label: 'Lobby', key: '' },
   { mode: 'QUESTION', label: 'Question', key: 'Q' },
   { mode: 'LEADERBOARD', label: 'Leaderboard', key: 'L' },
-  { mode: 'HOLD', label: 'Hold', key: 'H' },
   { mode: 'FINAL', label: 'Final', key: '' },
 ];
 
@@ -52,6 +54,7 @@ export function ConsolePage() {
   const [participantsOpen, setParticipantsOpen] = useState(false);
   const [holdMessage, setHoldMessage] = useState('');
   const [confirmFinish, setConfirmFinish] = useState(false);
+  const [projectorOpen, setProjectorOpen] = useState(false);
   const busyRef = useRef(false);
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -139,6 +142,8 @@ export function ConsolePage() {
   const { competition } = state;
   const projectorUrl = `${window.location.origin}/screen/${state.projectorToken}`;
   const live = competition.status === 'LIVE';
+  // Projector controls only matter once a projector screen is actually connected.
+  const projector = state.projectorConnected > 0;
 
   const copy = async (text: string, label: string) => {
     try {
@@ -183,6 +188,15 @@ export function ConsolePage() {
             <Button size="sm" onClick={() => setParticipantsOpen(true)}>
               <Users className="size-4" aria-hidden /> Participants
             </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setProjectorOpen(true)}
+              title="Show the quiz on a big screen"
+            >
+              <Monitor className="size-4" aria-hidden /> Projector
+              {projector && <span className="size-2 rounded-full bg-good" aria-label="connected" />}
+            </Button>
             <Link
               to={`/admin/competitions/${id}/results`}
               target="_blank"
@@ -217,8 +231,23 @@ export function ConsolePage() {
           {competition.status === 'LOBBY' && (
             <PhaseCard
               title={`${state.stats.joined} joined · ${state.stats.connected} connected`}
-              text="The projector shows the QR code and join code. Start when everyone is in."
+              text="Share the QR code or link below. Start when everyone is in."
             >
+              <div className="flex w-full flex-wrap items-center gap-5 rounded-2xl border border-line bg-surface-2 p-4">
+                <JoinQr url={state.joinUrl} className="size-36" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <p className="text-sm text-muted">Join code</p>
+                  <p className="font-mono text-3xl font-bold tracking-[0.25em] text-accent">{competition.joinCode}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <code className="min-w-0 truncate rounded-lg bg-surface px-2 py-1 text-xs text-muted">
+                      {state.joinUrl}
+                    </code>
+                    <Button size="sm" variant="ghost" onClick={() => copy(state.joinUrl, 'Join link')}>
+                      <Copy className="size-4" aria-hidden /> Copy link
+                    </Button>
+                  </div>
+                </div>
+              </div>
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="primary"
@@ -247,7 +276,7 @@ export function ConsolePage() {
           )}
 
           {competition.status === 'FINISHED' && (
-            <PhaseCard title="Quiz finished" text="The projector shows the final podium. Download the results now.">
+            <PhaseCard title="Quiz finished" text="Final results are on every screen. Download them now.">
               <Link
                 to={`/admin/competitions/${id}/results`}
                 className={buttonVariants({ variant: 'primary', size: 'xl' })}
@@ -257,56 +286,53 @@ export function ConsolePage() {
             </PhaseCard>
           )}
 
-          {(competition.status === 'LOBBY' || live || competition.status === 'FINISHED') && (
+          {live && (
             <Card className="p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                  <Monitor className="size-4 text-accent" aria-hidden /> Projector shows
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {DISPLAY_MODES.map(({ mode, label, key }) => (
-                    <Button
-                      key={mode}
-                      size="sm"
-                      variant={competition.displayMode === mode ? 'primary' : 'secondary'}
-                      disabled={busy}
-                      onClick={() =>
-                        send({ type: 'SET_DISPLAY', mode, message: mode === 'HOLD' ? holdMessage : undefined })
-                      }
-                    >
-                      {label}
-                      {key && (
-                        <kbd className="ml-1 rounded bg-black/20 px-1 font-mono text-[10px] opacity-70">{key}</kbd>
-                      )}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <Input
-                  value={holdMessage}
-                  onChange={(e) => setHoldMessage(e.target.value)}
-                  placeholder="Hold message, e.g. Break — back in 10 minutes"
-                  maxLength={200}
-                  className="h-9 min-w-56 flex-1"
-                />
-                {live && (
+              <p className="mb-3 text-sm font-semibold">Live controls</p>
+              <div className="flex flex-wrap items-center gap-3">
+                {competition.displayMode === 'HOLD' ? (
                   <Button
                     size="sm"
-                    variant={competition.leaderboardFrozen ? 'primary' : 'secondary'}
+                    variant="primary"
                     disabled={busy}
-                    onClick={() =>
-                      send(
-                        { type: competition.leaderboardFrozen ? 'UNFREEZE_LEADERBOARD' : 'FREEZE_LEADERBOARD' },
-                        competition.leaderboardFrozen ? 'Leaderboard unfrozen' : 'Leaderboard frozen',
-                      )
-                    }
+                    onClick={() => send({ type: 'SET_DISPLAY', mode: 'QUESTION' })}
                   >
-                    <Snowflake className="size-4" aria-hidden />
-                    {competition.leaderboardFrozen ? 'Unfreeze leaderboard' : 'Freeze leaderboard'}
+                    <Play className="size-4" aria-hidden /> Back to the quiz
                   </Button>
+                ) : (
+                  <>
+                    <Input
+                      value={holdMessage}
+                      onChange={(e) => setHoldMessage(e.target.value)}
+                      placeholder="Pause message, e.g. Break: back in 10 minutes"
+                      maxLength={200}
+                      className="h-9 min-w-56 flex-1"
+                    />
+                    <Button
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => send({ type: 'SET_DISPLAY', mode: 'HOLD', message: holdMessage })}
+                    >
+                      <Pause className="size-4" aria-hidden /> Pause screens
+                    </Button>
+                  </>
                 )}
-                {live && !state.question && (
+                <Button
+                  size="sm"
+                  variant={competition.leaderboardFrozen ? 'primary' : 'secondary'}
+                  disabled={busy}
+                  onClick={() =>
+                    send(
+                      { type: competition.leaderboardFrozen ? 'UNFREEZE_LEADERBOARD' : 'FREEZE_LEADERBOARD' },
+                      competition.leaderboardFrozen ? 'Leaderboard unfrozen' : 'Leaderboard frozen',
+                    )
+                  }
+                  title="Hide rank changes from participants, e.g. during the final round"
+                >
+                  <Snowflake className="size-4" aria-hidden />
+                  {competition.leaderboardFrozen ? 'Unfreeze ranks' : 'Freeze ranks'}
+                </Button>
+                {!state.question && (
                   <Button size="sm" variant="danger" disabled={busy} onClick={() => setConfirmFinish(true)}>
                     <Square className="size-4" aria-hidden /> Finish quiz
                   </Button>
@@ -315,38 +341,27 @@ export function ConsolePage() {
             </Card>
           )}
 
-          <Card className="p-4">
-            <div className="flex flex-wrap items-center gap-3 text-sm">
-              <span className="flex items-center gap-2 font-semibold">
-                <Monitor className="size-4 text-accent" aria-hidden /> Projector link
-              </span>
-              <span className={cn('text-xs', state.projectorConnected ? 'text-good' : 'text-warn')}>
-                ● {state.projectorConnected ? `${state.projectorConnected} connected` : 'not connected'}
-              </span>
-              <code className="min-w-0 flex-1 truncate rounded-lg bg-surface-2 px-2 py-1 text-xs text-muted">
-                {projectorUrl}
-              </code>
-              <Button size="sm" variant="ghost" onClick={() => copy(projectorUrl, 'Projector link')}>
-                <Copy className="size-4" aria-hidden /> Copy
-              </Button>
-              <a
-                href={projectorUrl}
-                target="_blank"
-                rel="noreferrer"
-                className={buttonVariants({ size: 'sm', variant: 'ghost' })}
-              >
-                <ExternalLink className="size-4" aria-hidden /> Open
-              </a>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={rotateProjector}
-                title="Create a new link; the old one stops working"
-              >
-                <RefreshCw className="size-4" aria-hidden /> New link
-              </Button>
-            </div>
-          </Card>
+          {projector && competition.status !== 'DRAFT' && (
+            <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <Monitor className="size-4 text-accent" aria-hidden /> Projector view
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {DISPLAY_MODES.map(({ mode, label, key }) => (
+                  <Button
+                    key={mode}
+                    size="sm"
+                    variant={competition.displayMode === mode ? 'primary' : 'secondary'}
+                    disabled={busy}
+                    onClick={() => send({ type: 'SET_DISPLAY', mode })}
+                  >
+                    {label}
+                    {key && <kbd className="ml-1 rounded bg-black/20 px-1 font-mono text-[10px] opacity-70">{key}</kbd>}
+                  </Button>
+                ))}
+              </div>
+            </Card>
+          )}
         </div>
 
         <StatsPanel state={state} />
@@ -358,8 +373,13 @@ export function ConsolePage() {
         </span>
         <span>Latency {clock.latencyMs} ms</span>
         <span className="ml-auto">
-          <kbd className="font-mono">Space</kbd> next step · <kbd className="font-mono">L</kbd> leaderboard ·{' '}
-          <kbd className="font-mono">Q</kbd> question · <kbd className="font-mono">H</kbd> hold
+          <kbd className="font-mono">Space</kbd> next step · <kbd className="font-mono">H</kbd> pause
+          {projector && (
+            <>
+              {' '}
+              · <kbd className="font-mono">L</kbd> leaderboard · <kbd className="font-mono">Q</kbd> question
+            </>
+          )}
         </span>
       </footer>
 
@@ -369,6 +389,33 @@ export function ConsolePage() {
         state={state}
         send={send}
       />
+      <Dialog
+        open={projectorOpen}
+        onClose={() => setProjectorOpen(false)}
+        title="Projector screen"
+        description="Optional. Open this link on the computer connected to a projector or TV to show questions, the timer and the leaderboard to the room."
+      >
+        <div className="space-y-4">
+          <p className={cn('text-sm', projector ? 'text-good' : 'text-muted')}>
+            ● {projector ? state.projectorConnected + ' screen(s) connected' : 'No screen connected'}
+          </p>
+          <code className="block break-all rounded-lg bg-surface-2 px-3 py-2 text-xs text-muted">{projectorUrl}</code>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => copy(projectorUrl, 'Projector link')}>
+              <Copy className="size-4" aria-hidden /> Copy link
+            </Button>
+            <a href={projectorUrl} target="_blank" rel="noreferrer" className={buttonVariants({ size: 'sm' })}>
+              <ExternalLink className="size-4" aria-hidden /> Open here
+            </a>
+            <Button size="sm" variant="ghost" onClick={rotateProjector} title="The old link stops working">
+              <RefreshCw className="size-4" aria-hidden /> New link
+            </Button>
+          </div>
+          <p className="text-xs text-faint">
+            Anyone with this link can watch the screen view but can't control the quiz.
+          </p>
+        </div>
+      </Dialog>
       <ConfirmDialog
         open={confirmFinish}
         title="Finish the quiz?"

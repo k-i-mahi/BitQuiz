@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { ArrowRight, MonitorPlay, Smartphone, Timer, Trophy } from 'lucide-react';
+import { ArrowRight, Radio, Smartphone, Timer, Trophy } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,13 +35,13 @@ export function LandingPage() {
             <span className="bg-gradient-to-r from-accent to-ieee bg-clip-text text-transparent">Answer faster.</span>
           </h1>
           <p className="mt-5 max-w-xl text-lg text-muted">
-            BitQuiz runs live quiz competitions. The Game Master controls every question in real time, the projector
-            shows it to the hall, and everyone answers from their phone.
+            Live quiz competitions, run in real time. Everyone answers from their phone and sees the same question at
+            the same moment.
           </p>
 
           <ul className="mt-10 grid gap-4 sm:grid-cols-2">
             {[
-              { icon: MonitorPlay, title: 'Projector-first', text: 'Big, readable screens for the whole hall.' },
+              { icon: Radio, title: 'Live control', text: 'Organizers run every question from one console.' },
               { icon: Smartphone, title: 'Join in seconds', text: 'Scan the QR code, enter name and roll.' },
               { icon: Timer, title: 'Server-timed', text: 'Every phone counts down to the same deadline.' },
               { icon: Trophy, title: 'Speed scoring', text: 'Correct and fast earns the most points.' },
