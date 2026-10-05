@@ -4,11 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+
+- Organizer accounts with real email: invite-only sign-up (owners invite by email, invitees set their own password), email verification, and "forgot password" reset links. Emails are sent through any SMTP server (Gmail app password supported) and logged when email is not configured.
+- Team & access page for owners: change roles, suspend or reactivate, sign out everywhere, remove members, and resend or revoke invitations. At least one active owner is always kept.
+- Per-email login throttle in addition to the per-IP limit.
+- The console shows the join QR code and link in the lobby.
+
 ### Changed
 
+- Projector controls appear only once a projector screen is connected; the projector link moved to a Projector button in the console header. Less projector-specific text on the landing page and console.
 - Real-time updates rebuilt for small servers: one shared cached snapshot per change, answers refresh only the console and projector counters, and updates per competition never overlap. 300 simulated players now pass on 0.1 CPU (p95 0.7 s, previously 6.8 s at 100 players).
 - Answer submission uses one read and one write; verified device tokens are cached briefly in memory.
-
 - Free hosting on Render (app) and Neon (database) replaces Railway; adds `render.yaml` and a deployment guide.
 - `DIRECT_URL` added for migrations so the app can use Neon's connection pooler.
 - Dependabot proposes only minor and patch updates; CI actions updated to current major versions.

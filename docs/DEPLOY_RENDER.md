@@ -48,13 +48,36 @@ Why two: the app talks to the database through Neon's pooler, which keeps workin
 
 Every push to `main` redeploys automatically.
 
-## 3. How the free plan behaves
+## 3. Turn on email (Gmail, free)
+
+Invitations, password resets and email verification are sent by email. Gmail works without your own domain (about 500 emails a day).
+
+1. Sign in to the Gmail account that should send the emails.
+2. Turn on **2-Step Verification**: Google Account → Security.
+3. Create an **App password**: Google Account → Security → App passwords (or search "App passwords"). Name it `BitQuiz`. Copy the 16-character password and remove the spaces.
+4. In Render → bitquiz → **Environment**, set:
+
+   | Key | Value |
+   | --- | --- |
+   | `SMTP_HOST` | `smtp.gmail.com` (already set by the Blueprint) |
+   | `SMTP_PORT` | `465` (already set by the Blueprint) |
+   | `SMTP_USER` | The Gmail address |
+   | `SMTP_PASS` | The 16-character app password |
+   | `MAIL_FROM` | Optional, e.g. `BitQuiz <you@gmail.com>` |
+
+5. Save. Render restarts the app. In **Team & access**, the yellow "email isn't configured" notice disappears.
+
+Then use **Send verification email** in the yellow bar at the top of the dashboard, and invite other organizers from **Team & access**.
+
+Without these settings the app still works, but emails are only written to the Render log.
+
+## 4. How the free plan behaves
 
 - **Sleeping.** After 15 minutes with no visitors Render stops the app. The next visit wakes it, which takes about a minute. An open Game Master console keeps it awake, because its live connection counts as activity.
 - **Database sleep.** Neon pauses after 5 minutes without queries and resumes in under a second on the next one. Render's health check uses `/healthz`, which doesn't touch the database, so idle time doesn't use up Neon's compute hours.
 - **Restarts.** If Render restarts the app mid-quiz, nothing is lost: all state is in the database, open questions are re-timed on start, and phones reconnect by themselves.
 
-## 4. Before the event (important)
+## 5. Before the event (important)
 
 The free app server is small (0.1 CPU). Test it with a full-size simulated competition **at least two days before**:
 
@@ -69,7 +92,7 @@ npm run loadtest -- --url https://<your-service>.onrender.com --email <admin ema
 
 The load test creates and archives a throwaway competition; it doesn't touch real ones.
 
-## 5. Custom domain (optional)
+## 6. Custom domain (optional)
 
 Render → service → **Settings → Custom Domains**. Add the domain, create the DNS record it shows, then set `PUBLIC_URL` to `https://your-domain` so the QR code uses it.
 
@@ -81,4 +104,6 @@ Render → service → **Settings → Custom Domains**. Add the domain, create t
 | `prepared statement … already exists` errors | `&pgbouncer=true` is missing from `DATABASE_URL` |
 | Can't log in after deploy | Check the deploy log for `Created owner …`. The owner is only created if no account with that email exists |
 | QR code points to the wrong address | Set `PUBLIC_URL` and redeploy |
+| Invitation emails fail with "Check the email settings" | Check `SMTP_USER` / `SMTP_PASS`; the app password must be from the same Gmail account, without spaces |
+| Emails land in spam | Ask recipients to mark the first one as "Not spam"; for better delivery use your own domain with a service like Brevo |
 | First page load takes a minute | The free app was asleep. Open it a few minutes before you need it |

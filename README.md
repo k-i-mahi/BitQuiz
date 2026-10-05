@@ -14,6 +14,8 @@ Built for IEEE CS KUET. Designed for 100–300 participants in one hall.
 - **Fix mistakes live:** void a question, correct the answer key (regrade), duplicate a question to re-ask it, edit names, remove participants.
 - **Leaderboard** with ties broken by correct count, then answer time. Can be frozen for a suspenseful final round.
 - **Text and code questions** (2–6 options, True/False included), entered in a form or imported from CSV with row-by-row validation.
+- **Organizer accounts with real email:** invite-only. Owners invite people by email, invitees set their own password, and there are email verification and "forgot password" links. Owners manage access from **Team & access**: roles, suspend or reactivate, sign out everywhere, remove, and resend or revoke invitations. There is always at least one active owner.
+- **Projector optional:** projector controls appear only once a projector screen is connected; without one, the console shows the join QR code and link.
 - **Exports:** final results CSV and a per-answer CSV for disputes.
 
 ## Tech stack
@@ -60,22 +62,23 @@ During development, phones on the same Wi-Fi can open `http://<your-computer-ip>
 
 ### Environment variables
 
-| Name                                                       | Default                 | Purpose                                                      |
-| ---------------------------------------------------------- | ----------------------- | ------------------------------------------------------------ |
-| `DATABASE_URL`                                             | —                       | PostgreSQL connection string                                 |
-| `SESSION_SECRET`                                           | —                       | Signs admin session cookies; at least 32 random characters   |
-| `PUBLIC_URL`                                               | `http://localhost:5173` | Base URL used in the join link and QR code                   |
-| `PORT`                                                     | `3000`                  | HTTP port                                                    |
-| `ANSWER_GRACE_MS`                                          | `1000`                  | Extra time after the deadline for answers already in flight  |
-| `LATENCY_CAP_MS`                                           | `500`                   | Maximum network-delay compensation                           |
-| `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_ORG_NAME` | —                       | First owner account, created by the seed if it doesn't exist |
-| `DB_PORT`                                                  | `5432`                  | Host port for the docker-compose database                    |
+| Name                                                                          | Default                 | Purpose                                                                                      |
+| ----------------------------------------------------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                                | —                       | PostgreSQL connection string                                                                 |
+| `SESSION_SECRET`                                                              | —                       | Signs admin session cookies; at least 32 random characters                                   |
+| `PUBLIC_URL`                                                                  | `http://localhost:5173` | Base URL used in the join link and QR code                                                   |
+| `PORT`                                                                        | `3000`                  | HTTP port                                                                                    |
+| `ANSWER_GRACE_MS`                                                             | `1000`                  | Extra time after the deadline for answers already in flight                                  |
+| `LATENCY_CAP_MS`                                                              | `500`                   | Maximum network-delay compensation                                                           |
+| `SEED_ADMIN_EMAIL`, `SEED_ADMIN_NAME`, `SEED_ADMIN_PASSWORD`, `SEED_ORG_NAME` | —                       | First owner account, created on start if it doesn't exist. Use a real email                  |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`               | —                       | Outgoing email (e.g. Gmail app password). Without them, emails are written to the server log |
+| `DB_PORT`                                                                     | `5432`                  | Host port for the docker-compose database                                                    |
 
 ## Running a competition
 
 1. **Organizer login → New competition.** Set the roll format (e.g. exactly 7 digits).
 2. **Add questions.** Use the form, or download the CSV template, fill it in Excel or Google Sheets and import it.
-3. **Open console → Open lobby.** Open the projector link on the projector laptop and press _Go fullscreen_. It shows the QR code and join code.
+3. **Open console → Open lobby.** Share the join QR code or link shown in the console. With a projector or TV, open the link from the console's **Projector** button on that computer and press _Go fullscreen_.
 4. **Start quiz.** Press **Space** for the next step: show → open (timer starts) → close → reveal → next. `L` shows the leaderboard, `Q` the question, `H` a hold message.
 5. **Finish quiz**, then download the results from the Results page.
 

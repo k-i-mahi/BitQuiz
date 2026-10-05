@@ -26,4 +26,13 @@ services:
         sync: false
       - key: SEED_ORG_NAME
         value: IEEE CS KUET
+      # Gmail SMTP for invitations, password resets and verification (see docs/DEPLOY_RENDER.md)
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: '465'
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
       # PUBLIC_URL defaults to the service's onrender.com address; set it only for a custom domain.
