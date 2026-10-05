@@ -1,0 +1,23 @@
+{
+  "name": "@bitquiz/shared",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "papaparse": "^5.5.3",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.3.16",
+    "vitest": "^3.2.4"
+  }
+}

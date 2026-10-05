@@ -1,0 +1,44 @@
+{
+  "name": "@bitquiz/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=../.env src/index.ts",
+    "build": "prisma generate",
+    "start": "tsx --env-file-if-exists=../.env src/index.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx --env-file-if-exists=../.env prisma/seed.ts",
+    "db:seed:demo": "tsx --env-file-if-exists=../.env prisma/seed.ts --demo"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@bitquiz/shared": "1.0.0",
+    "@prisma/client": "^6.19.0",
+    "bcryptjs": "^3.0.2",
+    "cookie": "^1.0.2",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "pino": "^10.1.0",
+    "prisma": "^6.19.0",
+    "socket.io": "^4.8.1",
+    "tsx": "^4.20.6",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.5",
+    "@types/node": "^22.18.0",
+    "@types/supertest": "^6.0.3",
+    "pino-pretty": "^13.1.2",
+    "socket.io-client": "^4.8.1",
+    "supertest": "^7.1.4",
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "name": "bitquiz",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Real-time quiz competition platform: Game Master console, projector screen and participant phones kept in sync live.",
+  "license": "UNLICENSED",
+  "author": "mahi <mahi.jess9t9@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/k-i-mahi/BitQuiz.git"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "workspaces": [
+    "shared",
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,web -c cyan,magenta \"npm run dev -w server\" \"npm run dev -w web\"",
+    "build": "npm run build -w web && npm run build -w server",
+    "start": "npm run start -w server",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run typecheck",
+    "db:generate": "npm run db:generate -w server",
+    "db:migrate": "npm run db:migrate -w server",
+    "db:deploy": "npm run db:deploy -w server",
+    "db:seed": "npm run db:seed -w server",
+    "loadtest": "tsx tools/loadtest/run.ts"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
