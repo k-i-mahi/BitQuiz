@@ -12,7 +12,7 @@ import { env } from '../env';
 import { isUniqueViolation, prisma } from '../lib/db';
 import { HttpError, badRequest, parse } from '../lib/errors';
 import { answerLimiter } from '../lib/rateLimit';
-import { getLatency, requestBroadcast, sendMe } from '../realtime/hub';
+import { getLatency, requestStats } from '../realtime/hub';
 import { questionRule } from '../realtime/views';
 
 export const answersRouter = Router();
@@ -23,27 +23,23 @@ answersRouter.post('/', requireParticipant, answerLimiter, async (req, res) => {
   const me = participantOf(req);
   const input = parse(answerRequestSchema, req.body);
 
-  const competition = await prisma.competition.findUnique({
-    where: { id: me.competitionId },
-    select: { id: true, status: true, currentQuestionId: true },
-  });
+  // One read for question, round and competition state keeps answering cheap on a small server.
   const question = await prisma.question.findFirst({
     where: { id: input.questionId, round: { competitionId: me.competitionId } },
-    include: { round: true },
+    include: { round: { include: { competition: { select: { id: true, status: true, currentQuestionId: true } } } } },
   });
+  const competition = question?.round.competition;
   if (!competition || !question) {
     throw new HttpError(409, ERROR_CODES.NOT_ACCEPTING, 'This question is not accepting answers.');
   }
 
   const respond = (optionId: string, alreadyAnswered: boolean) =>
     res.json({ questionId: question.id, optionId, alreadyAnswered });
-
-  // A retry of an answer that already landed returns the saved answer instead of an error.
-  const previous = await prisma.answer.findUnique({
-    where: { participantId_questionId: { participantId: me.id, questionId: question.id } },
-    select: { optionId: true },
-  });
-  if (previous) return respond(previous.optionId, true);
+  const savedAnswer = () =>
+    prisma.answer.findUnique({
+      where: { participantId_questionId: { participantId: me.id, questionId: question.id } },
+      select: { optionId: true },
+    });
 
   const acceptance = checkAcceptance({
     receivedAt,
@@ -56,6 +52,9 @@ answersRouter.post('/', requireParticipant, answerLimiter, async (req, res) => {
     graceMs: env.ANSWER_GRACE_MS,
   });
   if (!acceptance.ok) {
+    // A retry of an answer that already landed (e.g. after a dropped connection) gets the saved answer back.
+    const previous = await savedAnswer();
+    if (previous) return respond(previous.optionId, true);
     throw new HttpError(
       409,
       acceptance.reason === 'TOO_LATE' ? ERROR_CODES.TOO_LATE : ERROR_CODES.NOT_ACCEPTING,
@@ -91,19 +90,13 @@ answersRouter.post('/', requireParticipant, answerLimiter, async (req, res) => {
   } catch (error) {
     // Double tap or two tabs: the database's unique rule keeps only the first answer.
     if (isUniqueViolation(error)) {
-      const saved = await prisma.answer.findUniqueOrThrow({
-        where: { participantId_questionId: { participantId: me.id, questionId: question.id } },
-        select: { optionId: true },
-      });
-      return respond(saved.optionId, true);
+      const saved = await savedAnswer();
+      if (saved) return respond(saved.optionId, true);
     }
     throw error;
   }
 
-  void prisma.participant
-    .update({ where: { id: me.id }, data: { latencyMs: Math.round(latencyMs) } })
-    .catch(() => undefined);
-  void sendMe(competition.id, me.id).catch(() => undefined);
-  requestBroadcast(competition.id);
+  // The phone shows "locked" from this response; only the console and projector counters need refreshing.
+  requestStats(competition.id);
   respond(input.optionId, false);
 });

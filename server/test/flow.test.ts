@@ -183,10 +183,16 @@ describe.skipIf(!hasDatabase)('full quiz flow (integration)', () => {
     expect(again.body).toMatchObject({ optionId: 'B', alreadyAnswered: true });
     expect((await answer(nToken, q1, 'A')).status).toBe(200);
 
-    const locked = await waitFor<ParticipantMe>(phone, 'me', (m) => m.answer?.optionId === 'B');
-    expect(locked.result).toBeNull();
+    // Answers only refresh the console counters; phones learn "locked" from the HTTP response.
+    const gmStats = await agent.get(`/api/competitions/${competitionId}/leaderboard`);
+    expect(gmStats.status).toBe(200);
+    const answers = await prisma.answer.count({ where: { questionId: q1 } });
+    expect(answers).toBe(2);
 
+    // The next full update carries the participant's own answer, still without a result before reveal.
+    const closedUpdate = waitFor<ParticipantMe>(phone, 'me', (m) => m.answer?.optionId === 'B');
     await command({ type: 'CLOSE_QUESTION' });
+    expect((await closedUpdate).result).toBeNull();
     const revealed = waitFor<ParticipantMe>(phone, 'me', (m) => m.result !== null);
     await command({ type: 'REVEAL' });
     const result = await revealed;

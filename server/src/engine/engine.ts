@@ -15,7 +15,8 @@ import type { Competition, Prisma, Question, Round } from '@prisma/client';
 import { prisma, type Tx } from '../lib/db';
 import { HttpError, conflict, notFound } from '../lib/errors';
 import { logger } from '../lib/logger';
-import { broadcast, disconnectParticipant } from '../realtime/hub';
+import { forgetParticipant } from '../auth/session';
+import { broadcast, disconnectParticipant, invalidateState } from '../realtime/hub';
 import { questionRule } from '../realtime/views';
 import { invalidateBoards } from '../scoring/leaderboard';
 import { cancelClose, scheduleClose } from './timers';
@@ -86,6 +87,8 @@ export async function executeCommand(competitionId: string, command: Command, ac
       if (effects.schedule) scheduleClose(competitionId, effects.schedule.questionId, effects.schedule.endsAt);
       if (effects.disconnect) disconnectParticipant(effects.disconnect.participantId, effects.disconnect.reason);
       if (effects.scoresChanged) invalidateBoards(competitionId);
+      if ('participantId' in command) forgetParticipant(command.participantId);
+      invalidateState(competitionId);
       broadcast(competitionId).catch((err) => logger.error({ err, competitionId }, 'Broadcast failed'));
       return { revision };
     } catch (error) {

@@ -6,6 +6,9 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 
+- Real-time updates rebuilt for small servers: one shared cached snapshot per change, answers refresh only the console and projector counters, and updates per competition never overlap. 300 simulated players now pass on 0.1 CPU (p95 0.7 s, previously 6.8 s at 100 players).
+- Answer submission uses one read and one write; verified device tokens are cached briefly in memory.
+
 - Free hosting on Render (app) and Neon (database) replaces Railway; adds `render.yaml` and a deployment guide.
 - `DIRECT_URL` added for migrations so the app can use Neon's connection pooler.
 - Dependabot proposes only minor and patch updates; CI actions updated to current major versions.

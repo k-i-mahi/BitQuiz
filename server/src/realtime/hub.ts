@@ -4,10 +4,10 @@ import {
   ACTIVE_QUESTION_STATUSES,
   SOCKET_EVENTS,
   type GmState,
-  type GmStats,
   type OptionId,
   type ParticipantMe,
   type ParticipantState,
+  type RankedRow,
   type RunSheetRound,
   type ScreenState,
   type ViewerRole,
@@ -45,7 +45,7 @@ const presence = new Map<string, number>();
 /** participantId → recent one-way latency samples (ms). */
 const latencySamples = new Map<string, number[]>();
 const LATENCY_SAMPLE_COUNT = 5;
-const LATENCY_PING_INTERVAL_MS = 5_000;
+const LATENCY_PING_INTERVAL_MS = 10_000;
 
 /** Best recent estimate of a participant's one-way network delay. */
 export function getLatency(participantId: string): number {
@@ -149,28 +149,24 @@ async function onConnection(socket: BqSocket) {
   if (participantId) {
     await socket.join(room.participant(participantId));
     presence.set(participantId, (presence.get(participantId) ?? 0) + 1);
-    void prisma.participant
-      .update({ where: { id: participantId }, data: { lastSeenAt: new Date() } })
-      .catch(() => undefined);
     socket.on('disconnect', () => {
       const left = (presence.get(participantId) ?? 1) - 1;
       if (left <= 0) presence.delete(participantId);
       else presence.set(participantId, left);
-      requestBroadcast(competitionId);
+      requestStats(competitionId);
     });
-    requestBroadcast(competitionId);
+    requestStats(competitionId);
   } else if (role === 'screen') {
-    socket.on('disconnect', () => requestBroadcast(competitionId));
-    requestBroadcast(competitionId);
+    socket.on('disconnect', () => requestStats(competitionId));
+    requestStats(competitionId);
   }
 
   try {
-    const snapshot = await buildSnapshots(competitionId);
-    if (!snapshot || !socket.connected) return;
-    socket.emit(SOCKET_EVENTS.state, snapshot[role]);
+    const [core, live] = await Promise.all([getCore(competitionId), getLiveStats(competitionId)]);
+    if (!core || !socket.connected) return;
+    socket.emit(SOCKET_EVENTS.state, compose(core, live)[role]);
     if (participantId) {
-      const me = await buildMeMap(competitionId, snapshot, [participantId]);
-      const mine = me.get(participantId);
+      const mine = (await buildMeMap(competitionId, core, [participantId])).get(participantId);
       if (mine) socket.emit(SOCKET_EVENTS.me, mine);
     }
   } catch (error) {
@@ -191,23 +187,67 @@ function pingParticipants() {
 }
 
 // ---------------------------------------------------------------------------
-// Snapshots
+// Snapshot core: everything except live counters, cached until something changes
 // ---------------------------------------------------------------------------
 
-interface Snapshots {
+interface ParticipantRow {
+  id: string;
+  name: string;
+  roll: string;
+  kicked: boolean;
+  tokenHash: string | null;
+  joinedAt: Date;
+}
+
+interface Core {
   revision: number;
-  gm: GmState;
-  screen: ScreenState;
-  participant: ParticipantState;
-  currentQuestionId: string | null;
-  currentQuestionRevealed: boolean;
+  joinCode: string;
+  projectorToken: string;
+  competition: ReturnType<typeof toCompetitionView>;
+  current: { question: QuestionRecord; round: RoundRecord } | null;
+  position: { number: number; total: number };
+  runSheet: RunSheetRound[];
+  hasPendingQuestions: boolean;
+  participants: ParticipantRow[];
+  activeCount: number;
+  liveBoard: RankedRow[];
+  publicBoard: RankedRow[];
 }
 
-function joinUrl(joinCode: string): string {
-  return `${env.PUBLIC_URL.replace(/\/$/, '')}/play/${joinCode}`;
+interface LiveStats {
+  questionId: string | null;
+  distribution: Partial<Record<OptionId, number>>;
+  answered: number;
 }
 
-async function buildSnapshots(competitionId: string): Promise<Snapshots | null> {
+/** Incremented whenever the core of a competition changes; cached cores with an older version are rebuilt. */
+const coreVersion = new Map<string, number>();
+const coreCache = new Map<string, { version: number; promise: Promise<Core | null> }>();
+
+/** Marks the cached state of a competition as stale (commands, joins, edits). */
+export function invalidateState(competitionId: string): void {
+  coreVersion.set(competitionId, (coreVersion.get(competitionId) ?? 0) + 1);
+  statsCache.delete(competitionId);
+}
+
+/** Drops every cached state; used after admin edits whose competition isn't known up front. */
+export function invalidateAllState(): void {
+  coreCache.clear();
+  statsCache.clear();
+}
+
+/** One shared build per change: concurrent callers wait for the same database round trip. */
+function getCore(competitionId: string): Promise<Core | null> {
+  const version = coreVersion.get(competitionId) ?? 0;
+  const cached = coreCache.get(competitionId);
+  if (cached && cached.version === version) return cached.promise;
+  const promise = buildCore(competitionId);
+  coreCache.set(competitionId, { version, promise });
+  promise.catch(() => coreCache.delete(competitionId));
+  return promise;
+}
+
+async function buildCore(competitionId: string): Promise<Core | null> {
   const competition = await prisma.competition.findUnique({
     where: { id: competitionId },
     include: {
@@ -223,19 +263,66 @@ async function buildSnapshots(competitionId: string): Promise<Snapshots | null> 
   });
   if (!competition) return null;
 
-  const serverNow = Date.now();
-  const flat: Array<{ question: QuestionRecord; round: RoundRecord }> = competition.rounds.flatMap((round) =>
-    round.questions.map((question) => ({ question, round })),
-  );
+  const flat = competition.rounds.flatMap((round) => round.questions.map((question) => ({ question, round })));
   const counted = flat.filter((f) => f.question.status !== 'VOID');
   const current = flat.find((f) => f.question.id === competition.currentQuestionId) ?? null;
+  const boards = await getBoards(competitionId);
 
+  return {
+    revision: competition.revision,
+    joinCode: competition.joinCode,
+    projectorToken: competition.projectorToken,
+    competition: toCompetitionView(competition),
+    current,
+    position: current
+      ? { number: counted.findIndex((f) => f.question.id === current.question.id) + 1, total: counted.length }
+      : { number: 0, total: counted.length },
+    runSheet: competition.rounds.map((round) => ({
+      id: round.id,
+      order: round.order,
+      title: round.title,
+      questions: round.questions.map((q) => ({
+        id: q.id,
+        order: q.order,
+        prompt: q.prompt,
+        status: q.status,
+        correctOptionId: q.correctOptionId as OptionId,
+        optionCount: Array.isArray(q.options) ? q.options.length : 0,
+      })),
+    })),
+    hasPendingQuestions: flat.some((f) => f.question.status === 'PENDING'),
+    participants: competition.participants,
+    activeCount: competition.participants.filter((p) => !p.kicked).length,
+    liveBoard: boards.live,
+    publicBoard: boards.public,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Live counters: one cheap query, shared for a short moment
+// ---------------------------------------------------------------------------
+
+const STATS_TTL_MS = 250;
+const statsCache = new Map<string, { at: number; promise: Promise<LiveStats> }>();
+
+function getLiveStats(competitionId: string): Promise<LiveStats> {
+  const cached = statsCache.get(competitionId);
+  if (cached && Date.now() - cached.at < STATS_TTL_MS) return cached.promise;
+  const promise = buildLiveStats(competitionId);
+  statsCache.set(competitionId, { at: Date.now(), promise });
+  promise.catch(() => statsCache.delete(competitionId));
+  return promise;
+}
+
+async function buildLiveStats(competitionId: string): Promise<LiveStats> {
+  const core = await getCore(competitionId);
+  const questionId = core?.current?.question.id ?? null;
   const distribution: Partial<Record<OptionId, number>> = {};
   let answered = 0;
-  if (current) {
+  if (questionId) {
     const groups = await prisma.answer.groupBy({
       by: ['optionId'],
-      where: { questionId: current.question.id },
+      where: { questionId },
       _count: { _all: true },
     });
     for (const g of groups) {
@@ -243,58 +330,43 @@ async function buildSnapshots(competitionId: string): Promise<Snapshots | null> 
       answered += g._count._all;
     }
   }
+  return { questionId, distribution, answered };
+}
 
-  const position = current
-    ? { number: counted.findIndex((f) => f.question.id === current.question.id) + 1, total: counted.length }
-    : { number: 0, total: counted.length };
+// ---------------------------------------------------------------------------
+// Composing role views (pure, in memory)
+// ---------------------------------------------------------------------------
+
+function joinUrl(joinCode: string): string {
+  return `${env.PUBLIC_URL.replace(/\/$/, '')}/play/${joinCode}`;
+}
+
+function compose(core: Core, live: LiveStats) {
+  const serverNow = Date.now();
+  const distribution = live.questionId === core.current?.question.id ? live.distribution : {};
+  const answered = live.questionId === core.current?.question.id ? live.answered : 0;
   const questionFor = (role: ViewerRole) =>
-    current ? toQuestionView(role, current.question, current.round, position, distribution) : null;
-
-  const activeParticipants = competition.participants.filter((p) => !p.kicked);
-  const boards = await getBoards(competitionId);
-  const competitionView = toCompetitionView(competition);
+    core.current ? toQuestionView(role, core.current.question, core.current.round, core.position, distribution) : null;
   const base = {
-    revision: competition.revision,
+    revision: core.revision,
     serverNow,
-    competition: competitionView,
-    participantCount: activeParticipants.length,
+    competition: core.competition,
+    participantCount: core.activeCount,
   };
-
-  const runSheet: RunSheetRound[] = competition.rounds.map((round) => ({
-    id: round.id,
-    order: round.order,
-    title: round.title,
-    questions: round.questions.map((q) => ({
-      id: q.id,
-      order: q.order,
-      prompt: q.prompt,
-      status: q.status,
-      correctOptionId: q.correctOptionId as OptionId,
-      optionCount: Array.isArray(q.options) ? q.options.length : 0,
-    })),
-  }));
-
-  const correctOption = current?.question.correctOptionId as OptionId | undefined;
-  const stats: GmStats = {
-    joined: activeParticipants.length,
-    connected: activeParticipants.filter((p) => presence.has(p.id)).length,
-    answered,
-    correct: correctOption ? (distribution[correctOption] ?? 0) : 0,
-  };
-
-  const screenRoom = io?.sockets.adapter.rooms.get(room.screen(competitionId));
+  const correctOption = core.current?.question.correctOptionId as OptionId | undefined;
+  const active = core.participants.filter((p) => !p.kicked);
 
   const gm: GmState = {
     ...base,
     role: 'gm',
     question: questionFor('gm'),
-    joinUrl: joinUrl(competition.joinCode),
-    projectorToken: competition.projectorToken,
-    projectorConnected: screenRoom?.size ?? 0,
-    runSheet,
-    hasPendingQuestions: flat.some((f) => f.question.status === 'PENDING'),
-    leaderboard: boards.live,
-    participants: competition.participants.map((p) => ({
+    joinUrl: joinUrl(core.joinCode),
+    projectorToken: core.projectorToken,
+    projectorConnected: io?.sockets.adapter.rooms.get(room.screen(core.competition.id))?.size ?? 0,
+    runSheet: core.runSheet,
+    hasPendingQuestions: core.hasPendingQuestions,
+    leaderboard: core.liveBoard,
+    participants: core.participants.map((p) => ({
       id: p.id,
       name: p.name,
       roll: p.roll,
@@ -303,15 +375,20 @@ async function buildSnapshots(competitionId: string): Promise<Snapshots | null> 
       hasDevice: p.tokenHash !== null,
       joinedAt: p.joinedAt.toISOString(),
     })),
-    stats,
+    stats: {
+      joined: active.length,
+      connected: active.filter((p) => presence.has(p.id)).length,
+      answered,
+      correct: correctOption ? (distribution[correctOption] ?? 0) : 0,
+    },
   };
 
   const screen: ScreenState = {
     ...base,
     role: 'screen',
     question: questionFor('screen'),
-    joinUrl: joinUrl(competition.joinCode),
-    leaderboard: boards.public.slice(0, 10).map((r) => ({
+    joinUrl: joinUrl(core.joinCode),
+    leaderboard: core.publicBoard.slice(0, 10).map((r) => ({
       rank: r.rank,
       participantId: r.participantId,
       name: r.name,
@@ -323,55 +400,43 @@ async function buildSnapshots(competitionId: string): Promise<Snapshots | null> 
   };
 
   const participant: ParticipantState = { ...base, role: 'participant', question: questionFor('participant') };
-
-  return {
-    revision: competition.revision,
-    gm,
-    screen,
-    participant,
-    currentQuestionId: current?.question.id ?? null,
-    currentQuestionRevealed: current?.question.status === 'REVEALED',
-  };
+  return { gm, screen, participant };
 }
 
 /** Per-participant view: own answer, own result after reveal, own total and public rank. */
 async function buildMeMap(
   competitionId: string,
-  snapshot: Snapshots,
+  core: Core,
   participantIds: string[],
 ): Promise<Map<string, ParticipantMe & { revision: number }>> {
   const result = new Map<string, ParticipantMe & { revision: number }>();
   if (participantIds.length === 0) return result;
 
-  const [participants, answers, boards] = await Promise.all([
-    prisma.participant.findMany({
-      where: { id: { in: participantIds }, competitionId },
-      select: { id: true, name: true, roll: true },
-    }),
-    snapshot.currentQuestionId
-      ? prisma.answer.findMany({
-          where: { questionId: snapshot.currentQuestionId, participantId: { in: participantIds } },
-          select: { participantId: true, optionId: true, isCorrect: true, points: true, responseMs: true },
-        })
-      : Promise.resolve([]),
-    getBoards(competitionId),
-  ]);
+  const questionId = core.current?.question.id ?? null;
+  const revealed = core.current?.question.status === 'REVEALED';
+  const answers = questionId
+    ? await prisma.answer.findMany({
+        where: { questionId, participantId: { in: participantIds } },
+        select: { participantId: true, optionId: true, isCorrect: true, points: true, responseMs: true },
+      })
+    : [];
 
   const answerBy = new Map(answers.map((a) => [a.participantId, a]));
-  const boardBy = new Map(boards.public.map((r) => [r.participantId, r]));
-  const questionId = snapshot.currentQuestionId;
+  const boardBy = new Map(core.publicBoard.map((r) => [r.participantId, r]));
+  const wanted = new Set(participantIds);
 
-  for (const p of participants) {
+  for (const p of core.participants) {
+    if (!wanted.has(p.id)) continue;
     const answer = answerBy.get(p.id);
     const row = boardBy.get(p.id);
     result.set(p.id, {
-      revision: snapshot.revision,
+      revision: core.revision,
       participantId: p.id,
       name: p.name,
       roll: p.roll,
       answer: answer && questionId ? { questionId, optionId: answer.optionId as OptionId } : null,
       result:
-        snapshot.currentQuestionRevealed && questionId
+        revealed && questionId
           ? {
               questionId,
               isCorrect: answer?.isCorrect ?? false,
@@ -381,7 +446,7 @@ async function buildMeMap(
           : null,
       totalPoints: row?.points ?? 0,
       rank: row?.rank ?? null,
-      participantCount: boards.public.length,
+      participantCount: core.publicBoard.length,
     });
   }
   return result;
@@ -391,51 +456,93 @@ async function buildMeMap(
 // Broadcasting
 // ---------------------------------------------------------------------------
 
-/** Pushes fresh state to every screen of a competition. */
-export async function broadcast(competitionId: string): Promise<void> {
+/**
+ * Runs `task` for a competition so that at most one copy runs at a time; calls made while
+ * it runs are folded into a single re-run afterwards.
+ */
+function singleFlight(
+  registry: Map<string, { running: boolean; again: boolean }>,
+  task: (id: string) => Promise<void>,
+) {
+  return async (competitionId: string): Promise<void> => {
+    const entry = registry.get(competitionId) ?? { running: false, again: false };
+    registry.set(competitionId, entry);
+    if (entry.running) {
+      entry.again = true;
+      return;
+    }
+    entry.running = true;
+    try {
+      do {
+        entry.again = false;
+        await task(competitionId);
+      } while (entry.again);
+    } finally {
+      entry.running = false;
+    }
+  };
+}
+
+const fullRuns = new Map<string, { running: boolean; again: boolean }>();
+const statsRuns = new Map<string, { running: boolean; again: boolean }>();
+
+/** Pushes fresh state to every screen of a competition (after a command or other real change). */
+export const broadcast = singleFlight(fullRuns, async (competitionId) => {
   if (!io) return;
-  const snapshot = await buildSnapshots(competitionId);
-  if (!snapshot) return;
+  const [core, live] = await Promise.all([getCore(competitionId), getLiveStats(competitionId)]);
+  if (!core) return;
+  const views = compose(core, live);
 
-  io.to(room.gm(competitionId)).emit(SOCKET_EVENTS.state, snapshot.gm);
-  io.to(room.screen(competitionId)).emit(SOCKET_EVENTS.state, snapshot.screen);
-  io.to(room.participants(competitionId)).emit(SOCKET_EVENTS.state, snapshot.participant);
+  io.to(room.gm(competitionId)).emit(SOCKET_EVENTS.state, views.gm);
+  io.to(room.screen(competitionId)).emit(SOCKET_EVENTS.state, views.screen);
+  io.to(room.participants(competitionId)).emit(SOCKET_EVENTS.state, views.participant);
 
-  const sockets = await io.in(room.participants(competitionId)).fetchSockets();
-  const ids = [...new Set(sockets.map((s) => (s.data as SocketData).participantId).filter(Boolean))] as string[];
-  const me = await buildMeMap(competitionId, snapshot, ids);
+  const connectedIds = core.participants.filter((p) => presence.has(p.id)).map((p) => p.id);
+  const me = await buildMeMap(competitionId, core, connectedIds);
   for (const [participantId, view] of me) {
     io.to(room.participant(participantId)).emit(SOCKET_EVENTS.me, view);
   }
-}
-
-/** Sends only this participant's own view (after they answer). */
-export async function sendMe(competitionId: string, participantId: string): Promise<void> {
-  if (!io) return;
-  const snapshot = await buildSnapshots(competitionId);
-  if (!snapshot) return;
-  const me = await buildMeMap(competitionId, snapshot, [participantId]);
-  const view = me.get(participantId);
-  if (view) io.to(room.participant(participantId)).emit(SOCKET_EVENTS.me, view);
-}
-
-const pending = new Map<string, NodeJS.Timeout>();
-const BROADCAST_COALESCE_MS = 300;
+});
 
 /**
- * Coalesced broadcast for high-frequency changes (joins, answers, connects): at most one
- * full update per competition every 300 ms.
+ * Refreshes only the Game Master and projector (answer counts, connections). Phones are not
+ * sent anything, which keeps answering cheap even with hundreds of participants.
  */
-export function requestBroadcast(competitionId: string): void {
-  if (pending.has(competitionId)) return;
-  pending.set(
-    competitionId,
-    setTimeout(() => {
-      pending.delete(competitionId);
-      broadcast(competitionId).catch((err) => logger.error({ err, competitionId }, 'Broadcast failed'));
-    }, BROADCAST_COALESCE_MS),
-  );
+const sendStats = singleFlight(statsRuns, async (competitionId) => {
+  if (!io) return;
+  statsCache.delete(competitionId);
+  const [core, live] = await Promise.all([getCore(competitionId), getLiveStats(competitionId)]);
+  if (!core) return;
+  const views = compose(core, live);
+  io.to(room.gm(competitionId)).emit(SOCKET_EVENTS.state, views.gm);
+  io.to(room.screen(competitionId)).emit(SOCKET_EVENTS.state, views.screen);
+});
+
+function coalesce(delayMs: number, run: (competitionId: string) => Promise<void>) {
+  const pending = new Map<string, NodeJS.Timeout>();
+  return (competitionId: string) => {
+    if (pending.has(competitionId)) return;
+    pending.set(
+      competitionId,
+      setTimeout(() => {
+        pending.delete(competitionId);
+        run(competitionId).catch((err) => logger.error({ err, competitionId }, 'Realtime update failed'));
+      }, delayMs),
+    );
+  };
 }
+
+/** A participant joined or left the competition: everyone's counts change, at most once a second. */
+export const requestBroadcast = (() => {
+  const schedule = coalesce(1_000, broadcast);
+  return (competitionId: string) => {
+    invalidateState(competitionId);
+    schedule(competitionId);
+  };
+})();
+
+/** An answer arrived or a device connected: update the console and projector counters, twice a second. */
+export const requestStats = coalesce(500, sendStats);
 
 /** Disconnects every socket of a participant (kick or device reset). */
 export function disconnectParticipant(participantId: string, reason: 'kicked' | 'reset'): void {

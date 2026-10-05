@@ -19,12 +19,22 @@ import { executeCommand } from '../engine/engine';
 import { isUniqueViolation, prisma, type Tx } from '../lib/db';
 import { HttpError, parse } from '../lib/errors';
 import { generateJoinCode, randomToken } from '../lib/security';
-import { requestBroadcast } from '../realtime/hub';
+import { invalidateAllState, requestBroadcast } from '../realtime/hub';
 import { getBoards } from '../scoring/leaderboard';
 import { ownedCompetition, ownedQuestion, ownedRound, requireEditable } from './access';
 
 export const competitionsRouter = Router();
 competitionsRouter.use(requireAdmin);
+
+// Any successful edit (rounds, questions, settings, import) makes cached live state stale.
+competitionsRouter.use((req, res, next) => {
+  if (req.method !== 'GET') {
+    res.on('finish', () => {
+      if (res.statusCode < 400) invalidateAllState();
+    });
+  }
+  next();
+});
 
 const ROUND_DEFAULTS = {
   defaultTimeLimitSec: 20,

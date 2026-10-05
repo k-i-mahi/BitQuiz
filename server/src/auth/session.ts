@@ -75,16 +75,38 @@ export async function adminFromCookieHeader(cookieHeader: string | undefined): P
   };
 }
 
+/**
+ * Device tokens are looked up on every answer, so verified ones are kept in memory briefly.
+ * Kicks, device resets and renames clear the entry immediately via forgetParticipant().
+ */
+const PARTICIPANT_CACHE_TTL_MS = 60_000;
+const participantCache = new Map<string, { participant: AuthedParticipant; at: number }>();
+
+export function forgetParticipant(participantId: string): void {
+  for (const [hash, entry] of participantCache) {
+    if (entry.participant.id === participantId) participantCache.delete(hash);
+  }
+}
+
 export async function participantFromToken(token: string | undefined): Promise<AuthedParticipant | null> {
   if (!token) return null;
-  const participant = await prisma.participant.findUnique({ where: { tokenHash: sha256(token) } });
-  if (!participant || participant.kicked) return null;
-  return {
+  const hash = sha256(token);
+  const cached = participantCache.get(hash);
+  if (cached && Date.now() - cached.at < PARTICIPANT_CACHE_TTL_MS) return cached.participant;
+
+  const participant = await prisma.participant.findUnique({ where: { tokenHash: hash } });
+  if (!participant || participant.kicked) {
+    participantCache.delete(hash);
+    return null;
+  }
+  const authed: AuthedParticipant = {
     id: participant.id,
     competitionId: participant.competitionId,
     name: participant.name,
     roll: participant.roll,
   };
+  participantCache.set(hash, { participant: authed, at: Date.now() });
+  return authed;
 }
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
