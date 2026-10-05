@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Typecheck, test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: bitquiz
+          POSTGRES_PASSWORD: bitquiz
+          POSTGRES_DB: bitquiz_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bitquiz"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://bitquiz:bitquiz@localhost:5432/bitquiz_test?schema=public
+      SESSION_SECRET: ci-only-secret-that-is-long-enough-to-pass-validation
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run db:generate
+      - run: npm run typecheck
+      - run: npm run db:deploy
+      - run: npm test
+      - run: npm run build
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: bitquiz:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

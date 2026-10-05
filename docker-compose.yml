@@ -1,0 +1,43 @@
+name: bitquiz
+
+# Local development database, and a full self-hosted stack with the `app` profile:
+#   docker compose up -d db                 → database only (use with `npm run dev`)
+#   docker compose --profile app up -d      → database + BitQuiz (LAN / VPS mode)
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bitquiz
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bitquiz}
+      POSTGRES_DB: bitquiz
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bitquiz -d bitquiz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    profiles: ["app"]
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://bitquiz:${POSTGRES_PASSWORD:-bitquiz}@db:5432/bitquiz?schema=public
+      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in .env}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      SEED_ORG_NAME: ${SEED_ORG_NAME:-IEEE CS KUET}
+    ports:
+      - "3000:3000"
+
+volumes:
+  db-data:
