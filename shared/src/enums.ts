@@ -13,6 +13,9 @@ export type DisplayMode = (typeof DISPLAY_MODES)[number];
 export const ADMIN_ROLES = ['OWNER', 'OPERATOR'] as const;
 export type AdminRole = (typeof ADMIN_ROLES)[number];
 
+export const ADMIN_STATUSES = ['ACTIVE', 'SUSPENDED'] as const;
+export type AdminStatus = (typeof ADMIN_STATUSES)[number];
+
 export const OPTION_IDS = ['A', 'B', 'C', 'D', 'E', 'F'] as const;
 export type OptionId = (typeof OPTION_IDS)[number];
 
@@ -69,6 +72,9 @@ export const ERROR_CODES = {
   STALE_REVISION: 'STALE_REVISION',
   INVALID_TRANSITION: 'INVALID_TRANSITION',
   ROLL_TAKEN: 'ROLL_TAKEN',
+  ACCOUNT_SUSPENDED: 'ACCOUNT_SUSPENDED',
+  LINK_INVALID: 'LINK_INVALID',
+  EMAIL_FAILED: 'EMAIL_FAILED',
   KICKED: 'KICKED',
   JOIN_CLOSED: 'JOIN_CLOSED',
   NOT_ACCEPTING: 'NOT_ACCEPTING',

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express, { type Express } from 'express';
 import helmet from 'helmet';
-import { adminsRouter } from './admins/routes';
+import { teamRouter } from './team/routes';
 import { answersRouter } from './answers/routes';
 import { authRouter } from './auth/routes';
 import { competitionsRouter } from './competitions/routes';
@@ -65,7 +65,7 @@ export function createApp(): Express {
     next();
   });
   api.use('/auth', authRouter);
-  api.use('/admins', adminsRouter);
+  api.use('/team', teamRouter);
   api.use('/competitions', competitionsRouter);
   api.use('/answers', answersRouter);
   api.use('/', participantsRouter);

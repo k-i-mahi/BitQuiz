@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import { ADMIN_ROLES, CODE_LANGUAGES, DISPLAY_MODES, MAX_OPTIONS, MIN_OPTIONS, OPTION_IDS } from './enums';
+import {
+  ADMIN_ROLES,
+  ADMIN_STATUSES,
+  CODE_LANGUAGES,
+  DISPLAY_MODES,
+  MAX_OPTIONS,
+  MIN_OPTIONS,
+  OPTION_IDS,
+} from './enums';
 
 // ---------------------------------------------------------------------------
 // Primitive limits
@@ -27,23 +35,50 @@ const trimmed = (max: number) => z.string().trim().max(max);
 // Auth & admins
 // ---------------------------------------------------------------------------
 
+/** Trims and lower-cases before validating, so " Mahi@Gmail.com " is accepted and stored once. */
+export const emailSchema = z.string().trim().toLowerCase().pipe(z.email('Enter a valid email address').max(254));
+
+export const passwordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .max(200, 'Password is too long');
+
+export const personNameSchema = z.string().trim().min(2, 'Name must be at least 2 characters').max(60);
+
 export const loginSchema = z.object({
-  email: z.email().trim().toLowerCase(),
-  password: z.string().min(1).max(200),
+  email: emailSchema,
+  password: z.string().min(1, 'Enter your password').max(200),
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
-export const createAdminSchema = z.object({
-  email: z.email().trim().toLowerCase(),
-  password: z.string().min(8, 'Password must be at least 8 characters').max(200),
-  role: z.enum(ADMIN_ROLES),
-});
-export type CreateAdminInput = z.infer<typeof createAdminSchema>;
-
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1).max(200),
-  newPassword: z.string().min(8, 'Password must be at least 8 characters').max(200),
+  newPassword: passwordSchema,
 });
+
+export const profileSchema = z.object({ name: personNameSchema });
+
+export const forgotPasswordSchema = z.object({ email: emailSchema });
+
+/** Emailed links carry a random token; this only checks its shape. */
+const linkTokenSchema = z.string().trim().min(20).max(200);
+
+export const resetPasswordSchema = z.object({ token: linkTokenSchema, password: passwordSchema });
+
+export const verifyEmailSchema = z.object({ token: linkTokenSchema });
+
+export const inviteSchema = z.object({ email: emailSchema, role: z.enum(ADMIN_ROLES) });
+export type InviteInput = z.infer<typeof inviteSchema>;
+
+export const acceptInviteSchema = z.object({
+  token: linkTokenSchema,
+  name: personNameSchema,
+  password: passwordSchema,
+});
+
+export const updateMemberSchema = z
+  .object({ role: z.enum(ADMIN_ROLES).optional(), status: z.enum(ADMIN_STATUSES).optional() })
+  .refine((v) => v.role !== undefined || v.status !== undefined, { message: 'Nothing to change' });
 
 // ---------------------------------------------------------------------------
 // Competitions, rounds, questions

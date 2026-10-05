@@ -16,6 +16,16 @@ enum AdminRole {
   OPERATOR
 }
 
+enum AdminStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum TokenPurpose {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
 enum CompetitionStatus {
   DRAFT
   LOBBY
@@ -48,44 +58,86 @@ model Organization {
   createdAt    DateTime      @default(now())
   admins       AdminUser[]
   competitions Competition[]
+  invitations  Invitation[]
 }
 
 model AdminUser {
-  id             String       @id @default(uuid()) @db.Uuid
-  organizationId String       @db.Uuid
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  email          String       @unique
-  passwordHash   String
-  role           AdminRole    @default(OPERATOR)
-  /// Bumped on password change to invalidate existing sessions.
-  sessionVersion Int          @default(0)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id              String       @id @default(uuid()) @db.Uuid
+  organizationId  String       @db.Uuid
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email           String       @unique
+  name            String?
+  passwordHash    String
+  role            AdminRole    @default(OPERATOR)
+  status          AdminStatus  @default(ACTIVE)
+  /// Set once the person has proven they control the address (invite link, verification or reset link).
+  emailVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+  /// Bumped on password change, suspension or "sign out everywhere" to invalidate existing sessions.
+  sessionVersion  Int          @default(0)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  tokens          AuthToken[]
+  invitationsSent Invitation[] @relation("InvitedBy")
 
   @@index([organizationId])
 }
 
+/// An owner invited someone by email; they become an organizer by opening the link and setting a password.
+model Invitation {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           AdminRole
+  /// SHA-256 of the token in the emailed link.
+  tokenHash      String       @unique
+  invitedById    String?      @db.Uuid
+  invitedBy      AdminUser?   @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, email])
+}
+
+/// Single-use emailed links for verifying an address or resetting a password.
+model AuthToken {
+  id        String       @id @default(uuid()) @db.Uuid
+  adminId   String       @db.Uuid
+  admin     AdminUser    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  purpose   TokenPurpose
+  /// SHA-256 of the token in the emailed link.
+  tokenHash String       @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime     @default(now())
+
+  @@index([adminId, purpose])
+}
+
 model Competition {
-  id                String            @id @default(uuid()) @db.Uuid
-  organizationId    String            @db.Uuid
-  organization      Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  title             String
-  joinCode          String            @unique
-  status            CompetitionStatus @default(DRAFT)
-  rollMinLength     Int               @default(7)
-  rollMaxLength     Int               @default(7)
-  rollDigitsOnly    Boolean           @default(true)
-  allowLateJoin     Boolean           @default(true)
-  displayMode       DisplayMode       @default(LOBBY)
-  holdMessage       String?
+  id                  String            @id @default(uuid()) @db.Uuid
+  organizationId      String            @db.Uuid
+  organization        Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title               String
+  joinCode            String            @unique
+  status              CompetitionStatus @default(DRAFT)
+  rollMinLength       Int               @default(7)
+  rollMaxLength       Int               @default(7)
+  rollDigitsOnly      Boolean           @default(true)
+  allowLateJoin       Boolean           @default(true)
+  displayMode         DisplayMode       @default(LOBBY)
+  holdMessage         String?
   /// Set while the public leaderboard is frozen; public ranks only count questions revealed before it.
   leaderboardFrozenAt DateTime?
-  currentQuestionId String?           @db.Uuid
-  projectorToken    String            @unique
+  currentQuestionId   String?           @db.Uuid
+  projectorToken      String            @unique
   /// Incremented on every state change; commands must quote the revision they were issued against.
-  revision          Int               @default(0)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  revision            Int               @default(0)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 
   rounds       Round[]
   participants Participant[]

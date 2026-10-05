@@ -35,6 +35,7 @@ async function main() {
       data: {
         organizationId: organization.id,
         email,
+        name: process.env.SEED_ADMIN_NAME?.trim() || null,
         role: 'OWNER',
         passwordHash: await bcrypt.hash(password, 12),
       },

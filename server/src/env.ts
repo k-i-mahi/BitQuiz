@@ -10,6 +10,13 @@ const envSchema = z.object({
   PUBLIC_URL: z.url().default(process.env.RENDER_EXTERNAL_URL ?? 'http://localhost:5173'),
   ANSWER_GRACE_MS: z.coerce.number().int().min(0).max(5000).default(1000),
   LATENCY_CAP_MS: z.coerce.number().int().min(0).max(2000).default(500),
+  /** Outgoing email (Gmail: smtp.gmail.com, 465, your address, a 16-character app password). */
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(465),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  /** Sender shown to recipients, e.g. "BitQuiz <you@gmail.com>". Defaults to SMTP_USER. */
+  MAIL_FROM: z.string().optional(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   /** Directory of the built web app; served when present. */
   WEB_DIST: z.string().optional(),

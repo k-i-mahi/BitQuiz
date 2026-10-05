@@ -1,4 +1,4 @@
-import type { AdminRole, CompetitionStatus, DisplayMode, OptionId, QuestionStatus } from './enums';
+import type { AdminRole, AdminStatus, CompetitionStatus, DisplayMode, OptionId, QuestionStatus } from './enums';
 import type { QuizOption } from './schemas';
 import type { RankedRow } from './scoring';
 
@@ -132,6 +132,40 @@ export type AnyState = ParticipantState | ScreenState | GmState;
 
 export interface AdminUserView {
   id: string;
+  email: string;
+  name: string | null;
+  role: AdminRole;
+  emailVerified: boolean;
+  organizationName: string;
+}
+
+export interface TeamMember {
+  id: string;
+  email: string;
+  name: string | null;
+  role: AdminRole;
+  status: AdminStatus;
+  emailVerified: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
+}
+
+export interface PendingInvitation {
+  id: string;
+  email: string;
+  role: AdminRole;
+  invitedBy: string | null;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface TeamView {
+  members: TeamMember[];
+  invitations: PendingInvitation[];
+  emailDelivery: boolean;
+}
+
+export interface InvitationInfo {
   email: string;
   role: AdminRole;
   organizationName: string;

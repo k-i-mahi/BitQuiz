@@ -15,7 +15,9 @@ export const CSRF_HEADER = 'x-bitquiz-request';
 export interface AuthedAdmin {
   id: string;
   email: string;
+  name: string | null;
   role: AdminRole;
+  emailVerified: boolean;
   organizationId: string;
   organizationName: string;
 }
@@ -65,11 +67,14 @@ export async function adminFromCookieHeader(cookieHeader: string | undefined): P
     where: { id: session.uid },
     include: { organization: { select: { name: true } } },
   });
-  if (!admin || admin.sessionVersion !== session.ver) return null;
+  // Suspension and "sign out everywhere" bump sessionVersion, but check status too in case of a race.
+  if (!admin || admin.sessionVersion !== session.ver || admin.status !== 'ACTIVE') return null;
   return {
     id: admin.id,
     email: admin.email,
+    name: admin.name,
     role: admin.role,
+    emailVerified: admin.emailVerifiedAt !== null,
     organizationId: admin.organizationId,
     organizationName: admin.organization.name,
   };

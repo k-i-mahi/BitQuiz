@@ -30,3 +30,6 @@ export const answerLimiter = limiter(10_000, 20, 'Too many requests. Slow down.'
 
 /** Per IP; high because a whole hall of phones can share one public IP. */
 export const apiLimiter = limiter(60_000, 10_000, 'Too many requests. Try again shortly.');
+
+/** Emailed-link flows (forgot password, verification, invitations): slows down abuse and token guessing. */
+export const emailLinkLimiter = limiter(15 * 60_000, 30, 'Too many attempts. Wait a few minutes and try again.');
