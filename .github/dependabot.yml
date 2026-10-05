@@ -1,3 +1,6 @@
+# Dependabot proposes minor and patch updates automatically.
+# Major upgrades (breaking changes, e.g. Prisma 7, Vite 8, React Router 8) are done deliberately
+# in their own branch, never right before an event.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -5,14 +8,23 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+
+  # Stay on the Node.js LTS line used by the Dockerfile.
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: monthly
+    ignore:
+      - dependency-name: node
+        update-types: ['version-update:semver-major']
