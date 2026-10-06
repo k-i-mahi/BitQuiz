@@ -1,7 +1,7 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import express, { type Express } from 'express';
+import express, { type Express, type RequestHandler } from 'express';
 import helmet from 'helmet';
 import { teamRouter } from './team/routes';
 import { answersRouter } from './answers/routes';
@@ -9,11 +9,27 @@ import { authRouter } from './auth/routes';
 import { competitionsRouter } from './competitions/routes';
 import { env, isProduction } from './env';
 import { prisma } from './lib/db';
+import { logger } from './lib/logger';
 import { errorHandler, notFoundHandler } from './lib/errors';
 import { apiLimiter } from './lib/rateLimit';
 import { participantsRouter } from './participants/routes';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+
+/** Logs failed and slow API requests (path only: query strings can carry tokens). Everything else at debug. */
+const requestLog: RequestHandler = (req, res, next) => {
+  const started = performance.now();
+  res.on('finish', () => {
+    const ms = Math.round(performance.now() - started);
+    const entry = { method: req.method, path: req.baseUrl + req.path, status: res.statusCode, ms };
+    if (res.statusCode >= 500) logger.error(entry, 'Request failed');
+    else if (res.statusCode >= 400 && res.statusCode !== 401 && res.statusCode !== 409)
+      logger.warn(entry, 'Request rejected');
+    else if (ms > 1000) logger.info(entry, 'Slow request');
+    else logger.debug(entry, 'Request');
+  });
+  next();
+};
 
 export function createApp(): Express {
   const app = express();
@@ -58,6 +74,7 @@ export function createApp(): Express {
   });
 
   const api = express.Router();
+  api.use(requestLog);
   api.use(express.json({ limit: '2mb' }));
   api.use(apiLimiter);
   api.use((_req, res, next) => {
@@ -85,10 +102,19 @@ export function createApp(): Express {
         },
       }),
     );
+    // Link-preview crawlers need absolute URLs, so the public address is filled in once at startup.
+    const publicUrl = env.PUBLIC_URL.replace(/\/$/, '');
+    const indexHtml = readFileSync(path.join(webDist, 'index.html'), 'utf8')
+      .replace('content="/og-image.png"', `content="${publicUrl}/og-image.png"`)
+      .replace(
+        '<meta property="og:type"',
+        `<meta property="og:url" content="${publicUrl}/" />\n    <meta property="og:type"`,
+      );
+
     // Single-page app: every other GET serves index.html and the client router takes over.
     app.get(/^\/(?!api\/|socket\.io\/).*/, (_req, res) => {
       res.setHeader('Cache-Control', 'no-cache');
-      res.sendFile(path.join(webDist, 'index.html'));
+      res.type('html').send(indexHtml);
     });
   }
 

@@ -142,11 +142,12 @@ competitionsRouter.patch('/:id', async (req, res) => {
 
 competitionsRouter.delete('/:id', async (req, res) => {
   const competition = await ownedCompetition(adminOf(req), req.params.id);
-  if (competition.status !== 'DRAFT') {
+  // Running or finished competitions must be archived first, so live data is never deleted by accident.
+  if (competition.status !== 'DRAFT' && competition.status !== 'ARCHIVED') {
     throw new HttpError(
       409,
       ERROR_CODES.INVALID_TRANSITION,
-      'Only draft competitions can be deleted. Archive it instead.',
+      'Archive the competition before deleting it. Deleting removes all participants and answers.',
     );
   }
   await prisma.competition.delete({ where: { id: competition.id } });

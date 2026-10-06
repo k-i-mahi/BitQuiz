@@ -1,0 +1,7 @@
+# Only the landing page is meant for search engines.
+User-agent: *
+Allow: /$
+Disallow: /admin
+Disallow: /play
+Disallow: /screen
+Disallow: /api

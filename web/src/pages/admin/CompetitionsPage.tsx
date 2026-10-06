@@ -165,7 +165,7 @@ export function CompetitionsPage() {
                     <Archive className="size-3.5" aria-hidden /> Archive
                   </Button>
                 )}
-                {row.status === 'DRAFT' && (
+                {(row.status === 'DRAFT' || row.status === 'ARCHIVED') && (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -191,7 +191,7 @@ export function CompetitionsPage() {
         title={pending?.kind === 'delete' ? 'Delete this competition?' : 'Archive this competition?'}
         description={
           pending?.kind === 'delete'
-            ? `“${pending.competition.title}” and all its questions will be permanently deleted.`
+            ? `“${pending.competition.title}” will be permanently deleted with all its questions, participants and answers. This can't be undone.`
             : 'It will be hidden from the list. Results are kept.'
         }
         confirmLabel={pending?.kind === 'delete' ? 'Delete' : 'Archive'}
