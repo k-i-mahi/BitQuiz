@@ -52,11 +52,11 @@ Built for IEEE CS KUET quiz events of 100–300 participants in one hall. Tested
 
 **Images and videos** ([guide](docs/MEDIA.md))
 
-| Projector: video question                                     | Projector: image question                                |
-| ------------------------------------------------------------- | -------------------------------------------------------- |
-| ![Projector video](docs/screenshots/projector-video.png)      | ![Projector image](docs/screenshots/projector-media.png) |
-| **Console: video controls**                                   | **Editor: media with preview**                           |
-| ![Console video controls](docs/screenshots/console-video.png) | ![Editor media](docs/screenshots/editor-media.png)       |
+| Step 1: media only (phones say "Watch the screen")            | Step 2: question and options appear                           |
+| ------------------------------------------------------------- | ------------------------------------------------------------- |
+| ![Media stage](docs/screenshots/projector-media-stage.png)    | ![Question and options](docs/screenshots/projector-media.png) |
+| **Console: video controls**                                   | **Editor: media with preview**                                |
+| ![Console video controls](docs/screenshots/console-video.png) | ![Editor media](docs/screenshots/editor-media.png)            |
 
 <table>
   <tr>
@@ -93,7 +93,7 @@ Built for IEEE CS KUET quiz events of 100–300 participants in one hall. Tested
 **Organizers**
 
 - **Text and code questions** with 2–6 options (True/False included), syntax highlighting, explanations, and per-question time and points.
-- **Images and videos** from YouTube, Google Drive or any https link, or from files on the projector computer (works offline). Videos play on the projector only, start when the question is shown and are controlled from the console (play, pause, restart); the answer timer starts when you open answering. See [docs/MEDIA.md](docs/MEDIA.md).
+- **Images and videos** from YouTube, Google Drive or any https link, or from files on the projector computer (works offline). Media questions are shown in two steps: first the image or video alone (the video starts, phones say "Watch the screen", the question and options are not sent yet), then the question and options when the organizer shows them. Videos play on the projector only and are controlled from the console (play, pause, restart); the answer timer starts when you open answering. See [docs/MEDIA.md](docs/MEDIA.md).
 - **CSV import** with a row-by-row preview of problems (Excel/Google Sheets friendly), plus **results** and **all-answers** CSV exports.
 - **Projector optional.** Projector controls appear only when a projector screen is connected. Without one, the console shows the join QR code and link.
 - **Invite-only organizer accounts.** Owners invite organizers, who set their own password from a single-use link. The link can be shared directly (e.g. WhatsApp), so no email service is required. With email configured, invitations, verification and "forgot password" links are also emailed.

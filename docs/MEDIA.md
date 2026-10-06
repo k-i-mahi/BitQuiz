@@ -43,11 +43,28 @@ Videos play inside the browser: **MP4 (H.264)** or **WebM** work everywhere. If 
 
 ## During the quiz
 
-1. **Show question:** the projector shows the media and **the video starts automatically**. Phones show the question with options locked. The answer timer has not started yet.
-2. Use **Pause video**, **Play video** and **Restart** in the console if needed. The console preview is muted; sound plays on the projector.
-3. **Open answering** when the video has finished (or while it plays): now the timer starts.
+A question with an image or video is shown in two steps, so the room watches first and reads the options afterwards:
+
+| Console button | Projector | Phones |
+| --- | --- | --- |
+| **Show next question** | The image or video alone, large; **the video starts automatically** | "Watch the screen", no question and no options |
+| **Show question & options** | The question and options appear beside the media; the video keeps playing | The question and options, locked |
+| **Open answering** | Timer runs | Participants answer |
+
+- Use **Pause video**, **Play video** and **Restart** in the console at any time. The console preview is muted; sound plays on the projector.
+- In the first step the question text and options are not sent to phones or the projector at all, so nobody can read them early.
+- **Show + open answering** skips the second step when time is short. Questions without media are shown in one step as before.
 
 Browsers block video sound until someone clicks the page. Click **Go fullscreen** on the projector before the quiz starts. If a video still doesn't start, the projector shows **Click to start the video**.
+
+## Don't give away the answer
+
+For questions like "Which algorithm is this?", anything on screen can be a hint.
+
+- **YouTube shows the video's title and channel** on the projector (at the start and when paused), and YouTube doesn't allow hiding it. Upload your own video as **Unlisted** with a neutral title such as "Round 2 Q1", or use a file on the projector computer instead. On the projector BitQuiz turns off YouTube's controls and hover overlays, but the title can still appear.
+- **Google Drive** shows the file name in its player: give the file a neutral name.
+- **Files on the projector computer** show no title at all. They're the safest choice for this kind of question. Still use neutral file names (`round2-q1.mp4`), because the names appear in the projector's "Media files" dialog.
+- The editor shows a warning when a video question uses YouTube or Drive.
 
 ## Before the event
 
@@ -55,3 +72,4 @@ Browsers block video sound until someone clicks the page. Click **Go fullscreen*
 - [ ] For projector files: `Media files` shows all files loaded (for example `3/3`).
 - [ ] Projector volume is tested in the hall.
 - [ ] YouTube videos are Unlisted (not Private) and Drive files are shared with "Anyone with the link".
+- [ ] Video titles and file names don't reveal answers.

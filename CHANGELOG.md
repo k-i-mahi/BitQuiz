@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-10-06
+
+### Added
+
+- **Media first, then the question.** Questions with an image or video now start in a media-only stage: the projector shows the media large and the video starts; phones say "Watch the screen". The question text and options are withheld from phones and the projector until the organizer clicks **Show question & options**. "Show + open answering" skips the step. The media element stays mounted between stages, so a playing video isn't reloaded.
+- The editor warns that YouTube and Google Drive display the video title, which can give away the answer, and suggests neutral titles or projector files.
+
+### Fixed
+
+- Opening answering no longer restarts the question's video from the beginning.
+- On the projector, YouTube videos controlled from the console show no player controls, keyboard shortcuts or hover overlays (fewer moments where the title appears).
+
 ## [1.2.0] - 2026-10-06
 
 ### Added
