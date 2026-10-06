@@ -129,6 +129,7 @@ export function ImportPanel({ competitionId, hasQuestions, onImported }: Props) 
                         <th className="px-3 py-2">Question</th>
                         <th className="px-3 py-2">Options</th>
                         <th className="px-3 py-2">Answer</th>
+                        <th className="px-3 py-2">Media</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-line">
@@ -139,6 +140,11 @@ export function ImportPanel({ competitionId, hasQuestions, onImported }: Props) 
                           <td className="max-w-md truncate px-3 py-2">{q.prompt}</td>
                           <td className="px-3 py-2 tabular">{q.options.length}</td>
                           <td className="px-3 py-2 font-mono text-good">{q.correctOptionId}</td>
+                          <td className="px-3 py-2 text-xs text-muted">
+                            {q.mediaKind
+                              ? `${q.mediaKind.toLowerCase()} · ${q.mediaSource === 'LOCAL' ? 'file' : 'link'}`
+                              : '—'}
+                          </td>
                         </tr>
                       ))}
                     </tbody>

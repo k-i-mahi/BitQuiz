@@ -408,6 +408,12 @@ function RoundCard({
                   · {q.maxPoints ?? round.defaultMaxPoints}/{q.minPoints ?? round.defaultMinPoints} pts
                 </span>
                 {q.code && <Badge tone="accent">code</Badge>}
+                {q.mediaKind && (
+                  <Badge tone="accent">
+                    {q.mediaKind === 'VIDEO' ? 'video' : 'image'}
+                    {q.mediaSource === 'LOCAL' ? ' · projector file' : ''}
+                  </Badge>
+                )}
                 {q.status !== 'PENDING' && <Badge>{q.status}</Badge>}
               </div>
             </div>

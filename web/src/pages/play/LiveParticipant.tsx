@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { CheckCircle2, Clock, Hourglass, Lock, Trophy, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, Hourglass, Lock, MonitorPlay, Trophy, XCircle } from 'lucide-react';
 import type { OptionId, ParticipantState, QuestionView } from '@bitquiz/shared';
 import {
   CodeBlock,
@@ -13,6 +13,7 @@ import {
   useRemaining,
   type OptionState,
 } from '@/components/quiz';
+import { MediaView } from '@/components/MediaView';
 import { Button } from '@/components/ui/button';
 import { FullPageSpinner } from '@/components/ui/spinner';
 import { ApiError, api } from '@/lib/api';
@@ -200,7 +201,16 @@ function QuestionScreen({
         <TimerBar remainingMs={remaining} totalMs={question.timeLimitSec * 1000} />
       )}
 
+      {question.watchScreen && (
+        <p className="flex items-center gap-2 rounded-xl border border-accent/30 bg-accent-soft px-3 py-2 text-sm text-accent">
+          <MonitorPlay className="size-4 shrink-0" aria-hidden /> Watch the screen: this question has a video or
+          picture.
+        </p>
+      )}
       <h1 className="text-xl font-semibold leading-snug">{question.prompt}</h1>
+      {question.media && (
+        <MediaView key={question.id} media={question.media} className="h-56 w-full rounded-2xl border border-line" />
+      )}
       {question.code && <CodeBlock code={question.code} language={question.codeLanguage} className="text-[13px]" />}
 
       <div className="grid gap-2.5">

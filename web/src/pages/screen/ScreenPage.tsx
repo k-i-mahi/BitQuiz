@@ -3,10 +3,13 @@ import { useParams } from 'react-router';
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import QRCode from 'qrcode';
 import { Check, Crown, Maximize, Snowflake, Users } from 'lucide-react';
-import type { LeaderboardEntry, OptionId, QuestionView, ScreenState } from '@bitquiz/shared';
+import type { LeaderboardEntry, MediaPlayback, OptionId, QuestionView, ScreenState } from '@bitquiz/shared';
 import { CodeBlock, Logo, OptionLetter, TimerBar, TimerNumber, useRemaining } from '@/components/quiz';
 import { Button } from '@/components/ui/button';
 import { useLive } from '@/lib/live';
+import { useLocalMedia, type LocalMediaUrls } from '@/lib/localMedia';
+import { MediaView } from '@/components/MediaView';
+import { LocalMediaButton } from './LocalMediaButton';
 import type { ServerClock } from '@/lib/clock';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +17,7 @@ export function ScreenPage() {
   const { token = '' } = useParams<{ token: string }>();
   const { state, status, clock } = useLive<ScreenState>({ role: 'screen', token });
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
+  const localMedia = useLocalMedia();
 
   useEffect(() => {
     const onChange = () => setFullscreen(Boolean(document.fullscreenElement));
@@ -66,10 +70,12 @@ export function ScreenPage() {
             exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.3 }}
           >
-            <View state={state} clock={clock} />
+            <View state={state} clock={clock} localUrls={localMedia.urls} />
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {state.localMediaFiles.length > 0 && <LocalMediaButton required={state.localMediaFiles} media={localMedia} />}
 
       {!fullscreen && (
         <Button
@@ -94,7 +100,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   return <div className="grid-lines flex h-dvh flex-col overflow-hidden bg-bg text-fg">{children}</div>;
 }
 
-function View({ state, clock }: { state: ScreenState; clock: ServerClock }) {
+function View({ state, clock, localUrls }: { state: ScreenState; clock: ServerClock; localUrls: LocalMediaUrls }) {
   const mode = state.competition.status === 'FINISHED' ? 'FINAL' : state.competition.displayMode;
   switch (mode) {
     case 'LOBBY':
@@ -118,6 +124,8 @@ function View({ state, clock }: { state: ScreenState; clock: ServerClock }) {
           clock={clock}
           answered={state.answeredCount}
           total={state.participantCount}
+          playback={state.competition.media}
+          localUrls={localUrls}
         />
       ) : (
         <div className="grid flex-1 place-items-center text-center">
@@ -189,17 +197,23 @@ function Question({
   clock,
   answered,
   total,
+  playback,
+  localUrls,
 }: {
   question: QuestionView;
   clock: ServerClock;
   answered: number;
   total: number;
+  playback: MediaPlayback;
+  localUrls: LocalMediaUrls;
 }) {
   const remaining = useRemaining(question, clock);
   const revealed = question.status === 'REVEALED';
   const counts = question.distribution ?? {};
   const totalAnswers = Object.values(counts).reduce((a, b) => a + (b ?? 0), 0);
   const many = question.options.length > 4;
+  // Media or code takes the left column; options then stack on the right.
+  const side = Boolean(question.code || question.media);
 
   return (
     <div className="flex flex-1 flex-col gap-[2.5vh]">
@@ -225,15 +239,26 @@ function Question({
         <TimerBar remainingMs={remaining} totalMs={question.timeLimitSec * 1000} className="h-[1vh]" />
       )}
 
-      <h1 className={cn('font-semibold leading-tight', question.code ? 'text-[2.6vw]' : 'text-[3.4vw]')}>
-        {question.prompt}
-      </h1>
+      <h1 className={cn('font-semibold leading-tight', side ? 'text-[2.6vw]' : 'text-[3.4vw]')}>{question.prompt}</h1>
 
-      <div className={cn('grid flex-1 gap-[2vw]', question.code ? 'grid-cols-[1.1fr_1fr]' : 'grid-cols-1')}>
-        {question.code && (
-          <CodeBlock code={question.code} language={question.codeLanguage} className="self-start text-[1.8vw]" />
+      <div className={cn('grid min-h-0 flex-1 gap-[2vw]', side ? 'grid-cols-[1.25fr_1fr]' : 'grid-cols-1')}>
+        {side && (
+          <div className="flex min-h-0 flex-col gap-[2vh]">
+            {question.media && (
+              <MediaView
+                key={question.id}
+                media={question.media}
+                playback={playback}
+                localUrls={localUrls}
+                className="aspect-video max-h-[58vh] w-full rounded-[1.2vw] border border-line"
+              />
+            )}
+            {question.code && (
+              <CodeBlock code={question.code} language={question.codeLanguage} className="self-start text-[1.8vw]" />
+            )}
+          </div>
         )}
-        <div className={cn('grid content-start gap-[1.6vh]', !question.code && 'grid-cols-2')}>
+        <div className={cn('grid content-start gap-[1.6vh]', !side && 'grid-cols-2')}>
           {question.options.map((option) => {
             const isCorrect = revealed && option.id === question.correctOptionId;
             const count = counts[option.id as OptionId] ?? 0;
@@ -259,9 +284,7 @@ function Question({
                   />
                 )}
                 <OptionLetter id={option.id} className="relative size-[3.6vw] text-[1.8vw]" />
-                <span
-                  className={cn('relative flex-1 font-medium', many || question.code ? 'text-[1.9vw]' : 'text-[2.3vw]')}
-                >
+                <span className={cn('relative flex-1 font-medium', many || side ? 'text-[1.9vw]' : 'text-[2.3vw]')}>
                   {option.text}
                 </span>
                 {revealed && (

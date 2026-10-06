@@ -1,4 +1,4 @@
-import type { CompetitionStatus, OptionId, QuizOption } from '@bitquiz/shared';
+import type { CompetitionStatus, MediaKind, MediaSource, OptionId, QuizOption } from '@bitquiz/shared';
 
 export interface QuestionRow {
   id: string;
@@ -13,6 +13,10 @@ export interface QuestionRow {
   timeLimitSec: number | null;
   maxPoints: number | null;
   minPoints: number | null;
+  mediaKind: MediaKind | null;
+  mediaSource: MediaSource | null;
+  mediaRef: string | null;
+  mediaOnPhones: boolean;
   status: string;
 }
 

@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Ban, CheckCircle2, Clock, Eye, FastForward, Flag, Play, Plus, Square } from 'lucide-react';
-import type { GmState, NextStep } from '@bitquiz/shared';
+import { Ban, CheckCircle2, Clock, Eye, FastForward, Flag, Pause, Play, Plus, RotateCcw, Square } from 'lucide-react';
+import type { GmState, MediaPlayback, NextStep, QuestionMedia } from '@bitquiz/shared';
 import type { SendCommand } from './ConsolePage';
 import { CodeBlock, OptionLetter, TimerBar, TimerNumber, useRemaining } from '@/components/quiz';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/dialog';
+import { MediaView } from '@/components/MediaView';
 import type { ServerClock } from '@/lib/clock';
 import { cn } from '@/lib/utils';
 
@@ -83,6 +84,15 @@ export function CurrentQuestionPanel({ state, clock, busy, send, step, onMainSte
           <>
             <p className="text-xl font-semibold leading-snug">{question.prompt}</p>
             {question.code && <CodeBlock code={question.code} language={question.codeLanguage} className="text-sm" />}
+            {question.media && (
+              <MediaPanel
+                questionId={question.id}
+                media={question.media}
+                playback={state.competition.media}
+                busy={busy}
+                send={send}
+              />
+            )}
             <div className="grid gap-2 sm:grid-cols-2">
               {question.options.map((option) => {
                 const correct = option.id === question.correctOptionId;
@@ -180,5 +190,60 @@ export function CurrentQuestionPanel({ state, clock, busy, send, step, onMainSte
         onCancel={() => setConfirmVoid(false)}
       />
     </Card>
+  );
+}
+
+/**
+ * The organizer's view of the question media: a muted preview that follows playback, and the
+ * buttons that control the video on the projector.
+ */
+function MediaPanel({
+  questionId,
+  media,
+  playback,
+  busy,
+  send,
+}: {
+  questionId: string;
+  media: QuestionMedia;
+  playback: MediaPlayback;
+  busy: boolean;
+  send: SendCommand;
+}) {
+  const video = media.kind === 'VIDEO';
+  const where = media.source === 'LOCAL' ? `file ${media.ref} on the projector computer` : 'from a link';
+  return (
+    <div className="grid gap-3 rounded-xl border border-line bg-surface-2 p-3 sm:grid-cols-[minmax(0,16rem)_1fr]">
+      <MediaView
+        key={questionId}
+        media={media}
+        playback={video ? playback : undefined}
+        muted
+        className="aspect-video w-full rounded-lg"
+      />
+      <div className="flex flex-col justify-between gap-3 text-sm">
+        <p className="text-muted">
+          {video ? 'Video' : 'Image'} {where}
+          {media.onPhones ? ', also shown on phones.' : ', shown on the projector only.'}
+          {video && ' The preview here is muted; sound plays on the projector.'}
+        </p>
+        {video && (
+          <div className="flex flex-wrap gap-2">
+            {playback.playing ? (
+              <Button size="sm" disabled={busy} onClick={() => send({ type: 'MEDIA_PAUSE' })}>
+                <Pause className="size-4" aria-hidden /> Pause video
+              </Button>
+            ) : (
+              <Button size="sm" variant="primary" disabled={busy} onClick={() => send({ type: 'MEDIA_PLAY' })}>
+                <Play className="size-4" aria-hidden /> Play video
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" disabled={busy} onClick={() => send({ type: 'MEDIA_RESTART' })}>
+              <RotateCcw className="size-4" aria-hidden /> Restart
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

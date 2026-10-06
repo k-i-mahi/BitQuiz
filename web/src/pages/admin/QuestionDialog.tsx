@@ -7,9 +7,12 @@ import {
   OPTION_IDS,
   pointsPreview,
   questionSchema,
+  type MediaKind,
+  type MediaSource,
   type OptionId,
 } from '@bitquiz/shared';
 import type { QuestionRow, RoundRow } from './editor-types';
+import { MediaFields } from './MediaFields';
 import { CodeBlock, OptionLetter } from '@/components/quiz';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
@@ -40,6 +43,10 @@ export function QuestionDialog({ round, question, readOnly = false, onClose, onS
   const [timeLimit, setTimeLimit] = useState(question?.timeLimitSec?.toString() ?? '');
   const [maxPoints, setMaxPoints] = useState(question?.maxPoints?.toString() ?? '');
   const [minPoints, setMinPoints] = useState(question?.minPoints?.toString() ?? '');
+  const [mediaKind, setMediaKind] = useState<MediaKind | ''>(question?.mediaKind ?? '');
+  const [mediaSource, setMediaSource] = useState<MediaSource>(question?.mediaSource ?? 'LINK');
+  const [mediaRef, setMediaRef] = useState(question?.mediaRef ?? '');
+  const [mediaOnPhones, setMediaOnPhones] = useState(question?.mediaOnPhones ?? false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -72,6 +79,10 @@ export function QuestionDialog({ round, question, readOnly = false, onClose, onS
       timeLimitSec: optionalNumber(timeLimit),
       maxPoints: optionalNumber(maxPoints),
       minPoints: optionalNumber(minPoints),
+      mediaKind: mediaKind || null,
+      mediaSource: mediaKind ? mediaSource : null,
+      mediaRef: mediaKind ? mediaRef.trim() : null,
+      mediaOnPhones: mediaKind === 'IMAGE' && mediaSource === 'LINK' && mediaOnPhones,
     };
     const parsed = questionSchema.safeParse(body);
     if (!parsed.success) {
@@ -160,6 +171,17 @@ export function QuestionDialog({ round, question, readOnly = false, onClose, onS
               </div>
             )}
           </div>
+
+          <MediaFields
+            kind={mediaKind}
+            source={mediaSource}
+            mediaRef={mediaRef}
+            onPhones={mediaOnPhones}
+            onKind={setMediaKind}
+            onSource={setMediaSource}
+            onRef={setMediaRef}
+            onPhonesChange={setMediaOnPhones}
+          />
 
           <div>
             <Label>Options — select the correct one</Label>

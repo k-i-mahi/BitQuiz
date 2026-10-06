@@ -234,7 +234,11 @@ export function ConsolePage() {
           {competition.status === 'LOBBY' && (
             <PhaseCard
               title={`${state.stats.joined} joined · ${state.stats.connected} connected`}
-              text="Share the QR code or link below. Start when everyone is in."
+              text={
+                state.localMediaFiles.length > 0
+                  ? `Share the QR code or link below. This quiz plays ${state.localMediaFiles.length} file(s) from the projector computer: open the projector screen and load them under “Media files”.`
+                  : 'Share the QR code or link below. Start when everyone is in.'
+              }
             >
               <div className="flex w-full flex-wrap items-center gap-5 rounded-2xl border border-line bg-surface-2 p-4">
                 <JoinQr url={state.joinUrl} className="size-36" />
