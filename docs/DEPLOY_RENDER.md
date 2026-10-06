@@ -48,7 +48,11 @@ Why two: the app talks to the database through Neon's pooler, which keeps workin
 
 Every push to `main` redeploys automatically.
 
-## 3. Turn on email (Brevo, free)
+## 3. Email (optional)
+
+BitQuiz works without email: invitations come with a link you can share yourself, and a forgotten password is reset with a command (see [Locked out](#locked-out)). Set up email only if you want invitations, verification and password resets to be emailed automatically.
+
+### Turn on email with Brevo (free)
 
 Invitations, password resets and email verification are sent by email. **Render's free plan blocks the SMTP ports (25, 465, 587)**, so Gmail SMTP cannot work there. BitQuiz sends through **Brevo's HTTPS API** instead: free for 300 emails a day, no domain needed.
 
@@ -98,6 +102,18 @@ The load test creates and archives a throwaway competition; it doesn't touch rea
 ## 6. Custom domain (optional)
 
 Render → service → **Settings → Custom Domains**. Add the domain, create the DNS record it shows, then set `PUBLIC_URL` to `https://your-domain` so the QR code uses it.
+
+## Locked out
+
+Without email, reset a password from your own computer against the production database. In PowerShell, in the project folder:
+
+```powershell
+$env:DATABASE_URL = "<Neon direct connection string>"
+$env:DIRECT_URL   = "<Neon direct connection string>"
+npm run admin:set-password -w server -- you@example.com
+```
+
+Use the **direct** (non-pooled) string for both. The command asks for the new password twice, signs out existing sessions and reactivates the account. Close the terminal afterwards so the connection string isn't left in it.
 
 ## Troubleshooting
 

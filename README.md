@@ -28,7 +28,9 @@ Built for IEEE CS KUET quiz events of 100–300 participants in one hall. Tested
 - [Testing and performance](#testing-and-performance)
 - [Security](#security)
 - [Project structure](#project-structure)
+- [Recovering access](#recovering-access)
 - [Limitations](#limitations)
+- [Future work](#future-work)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -78,7 +80,7 @@ Built for IEEE CS KUET quiz events of 100–300 participants in one hall. Tested
 - **Text and code questions** with 2–6 options (True/False included), syntax highlighting, explanations, and per-question time and points.
 - **CSV import** with a row-by-row preview of problems (Excel/Google Sheets friendly), plus **results** and **all-answers** CSV exports.
 - **Projector optional.** Projector controls appear only when a projector screen is connected. Without one, the console shows the join QR code and link.
-- **Invite-only accounts with real email.** Owners invite organizers by email; invitees set their own password. Email verification and "forgot password" links. Invitations always come with a shareable link in case email is slow.
+- **Invite-only organizer accounts.** Owners invite organizers, who set their own password from a single-use link. The link can be shared directly (e.g. WhatsApp), so no email service is required. With email configured, invitations, verification and "forgot password" links are also emailed.
 - **Team & access.** Owners change roles, suspend or reactivate accounts, sign people out everywhere, remove members, and resend or revoke invitations. There is always at least one active owner.
 
 ## How a quiz runs
@@ -137,17 +139,17 @@ Without email settings, invitation and password-reset emails are printed in the 
 
 ## Configuration
 
-| Variable                                                                      | Required    | Purpose                                                                        |
-| ----------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------ |
-| `DATABASE_URL`                                                                | yes         | PostgreSQL connection used by the app (Neon: pooled URL + `&pgbouncer=true`)   |
-| `DIRECT_URL`                                                                  | yes         | Direct connection used by migrations (locally the same as `DATABASE_URL`)      |
-| `SESSION_SECRET`                                                              | yes         | Signs organizer sessions; at least 32 random characters                        |
-| `PUBLIC_URL`                                                                  | no          | Base URL for join links, QR codes and emailed links (defaults to Render's URL) |
-| `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_ADMIN_NAME`, `SEED_ORG_NAME` | first start | First owner account, created if it doesn't exist. Use a real email             |
-| `BREVO_API_KEY`, `MAIL_FROM`                                                  | for email   | Email over Brevo's HTTPS API (works on Render free)                            |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`                            | alternative | Email over SMTP, e.g. Gmail app password (VPS or venue laptop)                 |
-| `ANSWER_GRACE_MS`, `LATENCY_CAP_MS`                                           | no          | Answer grace window (1000) and latency compensation cap (500)                  |
-| `DB_PORT`                                                                     | no          | Host port of the docker-compose database                                       |
+| Variable                                                                      | Required    | Purpose                                                                          |
+| ----------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                                | yes         | PostgreSQL connection used by the app (Neon: pooled URL + `&pgbouncer=true`)     |
+| `DIRECT_URL`                                                                  | yes         | Direct connection used by migrations (locally the same as `DATABASE_URL`)        |
+| `SESSION_SECRET`                                                              | yes         | Signs organizer sessions; at least 32 random characters                          |
+| `PUBLIC_URL`                                                                  | no          | Base URL for join links, QR codes and emailed links (defaults to Render's URL)   |
+| `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_ADMIN_NAME`, `SEED_ORG_NAME` | first start | First owner account, created if it doesn't exist. Use a real email               |
+| `BREVO_API_KEY`, `MAIL_FROM`                                                  | optional    | Email over Brevo's HTTPS API (works on Render free)                              |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`                            | optional    | Email over SMTP, e.g. Gmail app password (not on Render free, which blocks SMTP) |
+| `ANSWER_GRACE_MS`, `LATENCY_CAP_MS`                                           | no          | Answer grace window (1000) and latency compensation cap (500)                    |
+| `DB_PORT`                                                                     | no          | Host port of the docker-compose database                                         |
 
 ## Deployment
 
@@ -196,12 +198,28 @@ docs/     Project plan, deployment guide, screenshots
 
 Tech: TypeScript, Node.js 22, Express 5, Socket.IO 4, Prisma 6, PostgreSQL 16, React 19, Vite 7, Tailwind CSS 4, Motion, Zod, Vitest, Docker, GitHub Actions.
 
+## Recovering access
+
+Without email, "forgot password" can't send a link. Whoever runs the server resets the password from their own computer:
+
+```bash
+npm run admin:set-password -w server -- you@example.com
+```
+
+It asks for the new password, signs out existing sessions and reactivates the account. It uses `DATABASE_URL` and `DIRECT_URL` from `.env`; for the hosted database, set them to the production values first (see [docs/DEPLOY_RENDER.md](docs/DEPLOY_RENDER.md#locked-out)).
+
 ## Limitations
 
 - **One server instance.** Live connections and timers are kept in one process; horizontal scaling would need a shared adapter (e.g. Redis).
 - **Free hosting sleeps.** Render's free service sleeps after 15 minutes without visitors and takes about a minute to wake. Open the console a few minutes before an event.
 - **Shared phones.** BitQuiz stops two devices from using the same roll, but it can't stop two people answering on one phone; supervise the hall.
 - **Text and code only.** No images, audio or video in questions.
+
+## Future work
+
+- **More organizers per club.** Invitations already work through a shareable link; turning on an email service (e.g. Brevo, free) adds emailed invitations, verification and self-service password resets.
+- **Several organizations** on one server, each with its own team and competitions.
+- **Images in questions**, per-question analytics, and team mode (one phone per team).
 
 ## Contributing
 

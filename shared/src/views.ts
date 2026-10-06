@@ -136,7 +136,14 @@ export interface AdminUserView {
   name: string | null;
   role: AdminRole;
   emailVerified: boolean;
+  /** False when this server has no email delivery configured. */
+  emailEnabled: boolean;
   organizationName: string;
+}
+
+/** Public server capabilities shown on the login pages. */
+export interface AuthConfig {
+  emailEnabled: boolean;
 }
 
 export interface TeamMember {

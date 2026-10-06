@@ -21,7 +21,7 @@ export default tseslint.config(
     languageOptions: { globals: globals.node },
   },
   {
-    files: ['server/prisma/seed.ts', 'tools/**/*.ts'],
+    files: ['server/prisma/*.ts', 'tools/**/*.ts'],
     rules: { 'no-console': 'off' },
   },
   {

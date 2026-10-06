@@ -13,7 +13,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx --env-file-if-exists=../.env prisma/seed.ts",
-    "db:seed:demo": "tsx --env-file-if-exists=../.env prisma/seed.ts --demo"
+    "db:seed:demo": "tsx --env-file-if-exists=../.env prisma/seed.ts --demo",
+    "admin:set-password": "tsx --env-file-if-exists=../.env prisma/set-password.ts"
   },
   "prisma": {
     "schema": "prisma/schema.prisma"

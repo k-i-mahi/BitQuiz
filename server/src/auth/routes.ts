@@ -10,6 +10,7 @@ import {
   resetPasswordSchema,
   verifyEmailSchema,
   type AdminUserView,
+  type AuthConfig,
   type InvitationInfo,
 } from '@bitquiz/shared';
 import { sendPasswordResetEmail, sendVerificationEmail } from '../accounts/emails';
@@ -25,6 +26,7 @@ import {
 import { isUniqueViolation, prisma } from '../lib/db';
 import { HttpError, badRequest, parse, unauthorized } from '../lib/errors';
 import { logger } from '../lib/logger';
+import { emailConfigured } from '../lib/mailer';
 import { emailLinkLimiter, loginLimiter } from '../lib/rateLimit';
 import { adminOf, clearSessionCookie, requireAdmin, setSessionCookie } from './session';
 
@@ -46,6 +48,7 @@ async function sendMe(res: Response, adminId: string) {
     name: admin.name,
     role: admin.role,
     emailVerified: admin.emailVerifiedAt !== null,
+    emailEnabled: emailConfigured(),
     organizationName: admin.organization.name,
   };
   res.json(view);
@@ -87,6 +90,11 @@ authRouter.post('/logout', (_req, res) => {
 // ---------------------------------------------------------------------------
 // Own account
 // ---------------------------------------------------------------------------
+
+authRouter.get('/config', (_req, res) => {
+  const config: AuthConfig = { emailEnabled: emailConfigured() };
+  res.json(config);
+});
 
 authRouter.get('/me', requireAdmin, async (req, res) => {
   await sendMe(res, adminOf(req).id);

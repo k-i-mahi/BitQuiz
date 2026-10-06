@@ -65,7 +65,8 @@ export function AdminLayout() {
           </nav>
         </div>
       </header>
-      {!admin.emailVerified && <VerifyEmailBanner email={admin.email} />}
+      {/* Verification needs outgoing email; without it the banner could never be resolved. */}
+      {admin.emailEnabled && !admin.emailVerified && <VerifyEmailBanner email={admin.email} />}
       <main className="mx-auto max-w-6xl px-5 py-8">
         <Outlet context={admin} />
       </main>

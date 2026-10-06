@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { CheckCircle2, MailCheck } from 'lucide-react';
-import { passwordSchema, personNameSchema, type InvitationInfo } from '@bitquiz/shared';
+import { passwordSchema, personNameSchema, type AuthConfig, type InvitationInfo } from '@bitquiz/shared';
 import { AuthShell } from './AuthShell';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { FieldError, Input, Label } from '@/components/ui/input';
@@ -81,6 +81,26 @@ export function ForgotPasswordPage() {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [emailEnabled, setEmailEnabled] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    api<AuthConfig>('/auth/config')
+      .then((config) => setEmailEnabled(config.emailEnabled))
+      .catch(() => setEmailEnabled(true));
+  }, []);
+
+  if (emailEnabled === null) return <Spinner className="min-h-dvh" />;
+  if (!emailEnabled) {
+    return (
+      <AuthShell title="Password reset by email is off">
+        <p className="text-sm text-muted">
+          This BitQuiz server doesn't send email, so reset links can't be delivered. Ask the person who runs the server
+          to reset your password for you.
+        </p>
+        <BackToLogin />
+      </AuthShell>
+    );
+  }
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();

@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- Email is optional: without a configured email service, the verify-email banner is hidden and "Forgot password" explains that reset links can't be sent.
+
+### Added
+
+- `npm run admin:set-password -w server -- <email>` to reset an organizer's password directly in the database when email isn't available.
+
 ## [1.1.0] - 2026-10-06
 
 ### Fixed
