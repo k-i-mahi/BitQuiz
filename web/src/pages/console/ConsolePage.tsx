@@ -16,7 +16,7 @@ import {
   Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { nextStep, type Command, type DisplayMode, type GmState } from '@bitquiz/shared';
+import { ACTIVE_QUESTION_STATUSES, nextStep, type Command, type DisplayMode, type GmState } from '@bitquiz/shared';
 import { STATUS_TONE } from '../admin/CompetitionsPage';
 import { CurrentQuestionPanel } from './CurrentQuestionPanel';
 import { ParticipantsDialog } from './ParticipantsDialog';
@@ -343,11 +343,19 @@ export function ConsolePage() {
                   <Snowflake className="size-4" aria-hidden />
                   {competition.leaderboardFrozen ? 'Unfreeze ranks' : 'Freeze ranks'}
                 </Button>
-                {!state.question && (
-                  <Button size="sm" variant="danger" disabled={busy} onClick={() => setConfirmFinish(true)}>
-                    <Square className="size-4" aria-hidden /> Finish quiz
-                  </Button>
-                )}
+                {/* Ending with questions left is an exception; the normal finish is the main button. */}
+                {state.hasPendingQuestions &&
+                  !(state.question && ACTIVE_QUESTION_STATUSES.includes(state.question.status)) && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-bad hover:text-bad"
+                      disabled={busy}
+                      onClick={() => setConfirmFinish(true)}
+                    >
+                      <Square className="size-4" aria-hidden /> End quiz early
+                    </Button>
+                  )}
               </div>
             </Card>
           )}
@@ -432,7 +440,11 @@ export function ConsolePage() {
       <ConfirmDialog
         open={confirmFinish}
         title="Finish the quiz?"
-        description="Everyone sees the final results. You can still regrade questions afterwards."
+        description={
+          state.hasPendingQuestions
+            ? "Questions that haven't been shown yet won't be asked. Everyone sees the final results; you can still regrade afterwards."
+            : 'Everyone sees the final results. You can still regrade questions afterwards.'
+        }
         confirmLabel="Finish quiz"
         loading={busy}
         onConfirm={async () => {

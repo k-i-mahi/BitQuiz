@@ -259,6 +259,7 @@ function Question({
                 media={question.media}
                 playback={playback}
                 localUrls={localUrls}
+                showEnded
                 className={cn(
                   'aspect-video rounded-[1.2vw] border border-line',
                   staged ? 'h-[66vh] max-w-full' : 'max-h-[58vh] w-full',

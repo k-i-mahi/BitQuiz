@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.3.2] - 2026-10-06
+
+### Fixed
+
+- **A finished video restarted by itself.** Players re-applied "play" on every live update (each answer, join or connection), and a finished video restarts from the beginning when told to play. Players now react only to real changes (play, pause, restart); a finished video stays finished until the organizer clicks **Replay video**.
+- The video now stops when answering closes (by the organizer or the timer) and when the question is voided, so the reveal isn't talked over.
+- When a video ends, the projector replaces YouTube's end screen (title and suggested videos) with "Video finished", and the console switches to **Replay video**. The YouTube state handshake is retried until the player is ready.
+- Questions without media no longer leave the playback flag on.
+- The console's secondary finish button is now **End quiz early**, shown only while questions remain; the normal finish is the main button.
+
 ## [1.3.1] - 2026-10-06
 
 ### Fixed

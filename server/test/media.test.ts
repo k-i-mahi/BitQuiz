@@ -117,13 +117,17 @@ describe.skipIf(!hasDatabase)('question media (integration)', () => {
     expect(await questionStatus(1)).toBe('OPEN');
     // Same restart count as before: opening didn't jump the video back to the start.
     expect(await detail()).toMatchObject({ mediaPlaying: true, mediaRestartCount: 2 });
+    // Time's up: the video stops so the reveal isn't talked over.
     await command({ type: 'CLOSE_QUESTION' });
+    expect((await detail()).mediaPlaying).toBe(false);
     await command({ type: 'REVEAL' });
   });
 
   it('shows questions without media directly', async () => {
     expect((await command({ type: 'SHOW_QUESTION' })).status).toBe(200);
     expect(await questionStatus(2)).toBe('SHOWN');
+    // Nothing to play: playback stays off and the restart counter doesn't move.
+    expect(await detail()).toMatchObject({ mediaPlaying: false, mediaRestartCount: 2 });
   });
 
   it('refuses video commands for a question without video', async () => {

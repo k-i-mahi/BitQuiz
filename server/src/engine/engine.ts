@@ -114,6 +114,14 @@ function stripRevision(command: Command): Record<string, unknown> {
 // Command handlers
 // ---------------------------------------------------------------------------
 
+/** Stops the projector video (time's up, void, or a question without media). */
+const stopMedia = { mediaPlaying: false } satisfies Prisma.CompetitionUpdateInput;
+
+/** Playback for a question that is being shown: its video starts from the beginning, otherwise nothing plays. */
+function mediaFor(question: Question): Prisma.CompetitionUpdateInput {
+  return question.mediaKind === 'VIDEO' ? startMedia : stopMedia;
+}
+
 /** Starts the current question's video from the beginning on every projector screen. */
 const startMedia = { mediaPlaying: true, mediaRestartCount: { increment: 1 } } satisfies Prisma.CompetitionUpdateInput;
 
@@ -155,7 +163,7 @@ async function apply(tx: Tx, c: Competition, command: Command, now: Date, actor:
       await moveQuestion(tx, target, stage, { shownAt: now });
       await tx.competition.update({
         where: { id: c.id },
-        data: { currentQuestionId: target.id, displayMode: 'QUESTION', ...startMedia },
+        data: { currentQuestionId: target.id, displayMode: 'QUESTION', ...mediaFor(target) },
       });
       return { log: { questionId: target.id, stage: stage === 'MEDIA' ? 'media' : 'details' } };
     }
@@ -183,7 +191,7 @@ async function apply(tx: Tx, c: Competition, command: Command, now: Date, actor:
       await tx.competition.update({
         where: { id: c.id },
         // Opening answering leaves a playing video alone; only a newly shown question starts its media.
-        data: { currentQuestionId: target.id, displayMode: 'QUESTION', ...(newlyShown ? startMedia : {}) },
+        data: { currentQuestionId: target.id, displayMode: 'QUESTION', ...(newlyShown ? mediaFor(target) : {}) },
       });
       return { schedule: { questionId: target.id, endsAt }, log: { questionId: target.id, timeLimitSec } };
     }
@@ -208,6 +216,7 @@ async function apply(tx: Tx, c: Competition, command: Command, now: Date, actor:
         throw invalid('Question was extended');
       }
       await moveQuestion(tx, current, 'CLOSED', { closedAt: now });
+      await tx.competition.update({ where: { id: c.id }, data: stopMedia });
       return { cancel: current.id, log: { questionId: current.id } };
     }
 
@@ -223,7 +232,7 @@ async function apply(tx: Tx, c: Competition, command: Command, now: Date, actor:
       const question = await findQuestion(tx, c, command.questionId);
       await moveQuestion(tx, question, 'VOID', {});
       if (c.currentQuestionId === question.id) {
-        await tx.competition.update({ where: { id: c.id }, data: { currentQuestionId: null } });
+        await tx.competition.update({ where: { id: c.id }, data: { currentQuestionId: null, ...stopMedia } });
       }
       return { scoresChanged: true, cancel: question.id };
     }

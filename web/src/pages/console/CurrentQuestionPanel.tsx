@@ -243,6 +243,8 @@ function MediaPanel({
   send: SendCommand;
 }) {
   const video = media.kind === 'VIDEO';
+  // The muted preview follows the projector; when it reports the end, offer a replay.
+  const [ended, setEnded] = useState(false);
   const where = media.source === 'LOCAL' ? `file ${media.ref} on the projector computer` : 'from a link';
   return (
     <div className="grid gap-3 rounded-xl border border-line bg-surface-2 p-3 sm:grid-cols-[minmax(0,16rem)_1fr]">
@@ -251,6 +253,7 @@ function MediaPanel({
         media={media}
         playback={video ? playback : undefined}
         muted
+        onEndedChange={setEnded}
         className="aspect-video w-full rounded-lg"
       />
       <div className="flex flex-col justify-between gap-3 text-sm">
@@ -261,7 +264,11 @@ function MediaPanel({
         </p>
         {video && (
           <div className="flex flex-wrap gap-2">
-            {playback.playing ? (
+            {ended ? (
+              <Button size="sm" variant="primary" disabled={busy} onClick={() => send({ type: 'MEDIA_RESTART' })}>
+                <RotateCcw className="size-4" aria-hidden /> Replay video
+              </Button>
+            ) : playback.playing ? (
               <Button size="sm" disabled={busy} onClick={() => send({ type: 'MEDIA_PAUSE' })}>
                 <Pause className="size-4" aria-hidden /> Pause video
               </Button>
@@ -270,9 +277,11 @@ function MediaPanel({
                 <Play className="size-4" aria-hidden /> Play video
               </Button>
             )}
-            <Button size="sm" variant="ghost" disabled={busy} onClick={() => send({ type: 'MEDIA_RESTART' })}>
-              <RotateCcw className="size-4" aria-hidden /> Restart
-            </Button>
+            {!ended && (
+              <Button size="sm" variant="ghost" disabled={busy} onClick={() => send({ type: 'MEDIA_RESTART' })}>
+                <RotateCcw className="size-4" aria-hidden /> Restart
+              </Button>
+            )}
           </div>
         )}
       </div>
