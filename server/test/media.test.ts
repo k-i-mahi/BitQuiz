@@ -88,6 +88,12 @@ describe.skipIf(!hasDatabase)('question media (integration)', () => {
       .set(CSRF)
       .send(question(3, { mediaKind: 'IMAGE', mediaSource: 'LOCAL', mediaRef: 'graph.png', mediaOnPhones: true }));
     expect(localOnPhones.status).toBe(400);
+
+    const image = await owner
+      .post(`/api/competitions/rounds/${roundId}/questions`)
+      .set(CSRF)
+      .send(question(3, { mediaKind: 'IMAGE', mediaSource: 'LINK', mediaRef: 'https://example.com/graph.png' }));
+    expect(image.status).toBe(201);
   });
 
   it('starts the video when a question is shown, and the console can pause and restart it', async () => {
@@ -110,16 +116,18 @@ describe.skipIf(!hasDatabase)('question media (integration)', () => {
     expect(await detail()).toMatchObject({ mediaPlaying: true, mediaRestartCount: 2 });
   });
 
-  it('shows the question and options on the second step, and opening answering keeps the video going', async () => {
+  it('replaces the media with the text-only question on the second step', async () => {
     expect((await command({ type: 'SHOW_QUESTION' })).status).toBe(200);
     expect(await questionStatus(1)).toBe('SHOWN');
+    // The video stops: the question and options take its place.
+    expect(await detail()).toMatchObject({ mediaPlaying: false, mediaRestartCount: 2 });
+    const play = await command({ type: 'MEDIA_PLAY' });
+    expect(play.status).toBe(409);
+    expect(play.body.error.message).toMatch(/before the question is shown/);
     expect((await command({ type: 'OPEN_QUESTION' })).status).toBe(200);
     expect(await questionStatus(1)).toBe('OPEN');
-    // Same restart count as before: opening didn't jump the video back to the start.
-    expect(await detail()).toMatchObject({ mediaPlaying: true, mediaRestartCount: 2 });
-    // Time's up: the video stops so the reveal isn't talked over.
-    await command({ type: 'CLOSE_QUESTION' });
     expect((await detail()).mediaPlaying).toBe(false);
+    await command({ type: 'CLOSE_QUESTION' });
     await command({ type: 'REVEAL' });
   });
 
@@ -134,5 +142,17 @@ describe.skipIf(!hasDatabase)('question media (integration)', () => {
     const res = await command({ type: 'MEDIA_PLAY' });
     expect(res.status).toBe(409);
     expect(res.body.error.message).toMatch(/no video/);
+  });
+
+  it('never skips the media stage: a question with media cannot be shown and opened at once', async () => {
+    await command({ type: 'OPEN_QUESTION' });
+    await command({ type: 'CLOSE_QUESTION' });
+    await command({ type: 'REVEAL' });
+    const skip = await command({ type: 'OPEN_QUESTION' });
+    expect(skip.status).toBe(409);
+    expect(skip.body.error.message).toMatch(/starts with its media/);
+    expect(await questionStatus(3)).toBe('PENDING');
+    expect((await command({ type: 'SHOW_QUESTION' })).status).toBe(200);
+    expect(await questionStatus(3)).toBe('MEDIA');
   });
 });

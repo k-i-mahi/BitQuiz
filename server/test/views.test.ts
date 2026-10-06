@@ -77,10 +77,16 @@ describe('mediaFor', () => {
   });
   const projectorImage = withMedia({ mediaKind: 'IMAGE', mediaSource: 'LOCAL', mediaRef: 'graph.png' });
 
-  it('gives the projector and console every kind of media', () => {
+  it('gives the projector every kind of media in the media stage, and the console always', () => {
     for (const q of [video, phoneImage, projectorImage]) {
-      expect(mediaFor('screen', q)).not.toBeNull();
+      expect(mediaFor('screen', { ...q, status: 'MEDIA' })).not.toBeNull();
       expect(mediaFor('gm', q)).not.toBeNull();
+    }
+  });
+
+  it('shows the question text-only on the projector once the media stage is over', () => {
+    for (const status of ['SHOWN', 'OPEN', 'CLOSED', 'REVEALED'] as const) {
+      expect(mediaFor('screen', { ...video, status })).toBeNull();
     }
   });
 

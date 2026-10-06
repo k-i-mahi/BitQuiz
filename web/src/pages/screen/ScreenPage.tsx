@@ -218,8 +218,8 @@ function Question({
   const many = question.options.length > 4;
   // Media or code takes the left column; options then stack on the right.
   const side = Boolean(question.code || question.media);
-  // Media stage: only the image or video, large. The same MediaView stays mounted when the question
-  // and options appear, so a playing video is never reloaded.
+  // Media stage: only the image or video, large. When the question is shown, the server stops
+  // sending the media and this becomes the text-only layout.
   const staged = question.status === 'MEDIA';
 
   return (

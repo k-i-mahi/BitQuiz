@@ -48,12 +48,15 @@ A question with an image or video is shown in two steps, so the room watches fir
 | Console button | Projector | Phones |
 | --- | --- | --- |
 | **Show next question** | The image or video alone, large; **the video starts automatically** | "Watch the screen", no question and no options |
-| **Show question & options** | The question and options appear beside the media; the video keeps playing | The question and options, locked |
+| **Show question & options** | The video stops and the question and options replace it, text only like any other question | The question and options, locked |
 | **Open answering** | Timer runs | Participants answer |
 
-- Use **Pause video**, **Play video** and **Restart** in the console at any time. The console preview is muted; sound plays on the projector.
+- While the video is on screen, use **Pause video**, **Play video** and **Restart** in the console. When it ends, the projector shows "Video finished" and the console offers **Replay video**. The console preview is muted; sound plays on the projector.
 - In the first step the question text and options are not sent to phones or the projector at all, so nobody can read them early.
-- **Show + open answering** skips the second step when time is short. Questions without media are shown in one step as before.
+- **Show + open answering** goes from the video straight to answering when time is short.
+- The media always comes first: **Show + open next** isn't offered when the next question has media.
+- Questions without media are shown in one step as before.
+- The main button ignores a second click until the first one has taken effect, so a double click never runs two steps.
 
 Browsers block video sound until someone clicks the page. Click **Go fullscreen** on the projector before the quiz starts. If a video still doesn't start, the projector shows **Click to start the video**.
 

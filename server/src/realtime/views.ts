@@ -76,11 +76,13 @@ export function toCompetitionView(c: CompetitionRecord): CompetitionView {
 }
 
 /**
- * Media a role receives. The projector and console get everything; phones only get linked images
- * marked "show on phones", so 300 phones never download a video.
+ * Media a role receives. The projector shows media only in the media stage: once the question is
+ * shown, it gets the text-only layout. Phones only get linked images marked "show on phones", so
+ * 300 phones never download a video.
  */
 export function mediaFor(role: ViewerRole, question: QuestionRecord): QuestionMedia | null {
   if (!question.mediaKind || !question.mediaSource || !question.mediaRef) return null;
+  if (role === 'screen' && question.status !== 'MEDIA') return null;
   const media: QuestionMedia = {
     kind: question.mediaKind,
     source: question.mediaSource,

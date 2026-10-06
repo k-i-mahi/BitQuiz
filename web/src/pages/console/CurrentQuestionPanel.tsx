@@ -56,6 +56,9 @@ export function CurrentQuestionPanel({ state, clock, busy, send, step, onMainSte
   const main = step ? STEP_LABEL[step] : null;
   const active = question && ACTIVE_QUESTION_STATUSES.includes(question.status);
   const totalAnswers = Object.values(question?.distribution ?? {}).reduce((a, b) => a + (b ?? 0), 0);
+  // A question with media always starts with the media alone, so it can't be shown and opened at once.
+  const nextPending = state.runSheet.flatMap((r) => r.questions).find((q) => q.status === 'PENDING');
+  const canShowAndOpen = !active && nextPending !== undefined && !nextPending.hasMedia;
 
   return (
     <Card className="overflow-hidden">
@@ -106,7 +109,8 @@ export function CurrentQuestionPanel({ state, clock, busy, send, step, onMainSte
           <>
             <p className="text-xl font-semibold leading-snug">{question.prompt}</p>
             {question.code && <CodeBlock code={question.code} language={question.codeLanguage} className="text-sm" />}
-            {question.media && (
+            {/* The media is on screen only in its own stage; the question itself is text only. */}
+            {question.media && question.status === 'MEDIA' && (
               <MediaPanel
                 questionId={question.id}
                 media={question.media}
@@ -170,7 +174,7 @@ export function CurrentQuestionPanel({ state, clock, busy, send, step, onMainSte
               <kbd className="ml-2 rounded bg-black/20 px-1.5 py-0.5 font-mono text-xs">Space</kbd>
             </Button>
           )}
-          {!active && state.hasPendingQuestions && (
+          {canShowAndOpen && (
             <Button
               size="lg"
               disabled={busy}

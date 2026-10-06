@@ -114,6 +114,8 @@ export interface RunSheetQuestion {
   status: QuestionStatus;
   correctOptionId: OptionId;
   optionCount: number;
+  /** Starts with its image or video on its own. */
+  hasMedia: boolean;
 }
 
 export interface RunSheetRound {

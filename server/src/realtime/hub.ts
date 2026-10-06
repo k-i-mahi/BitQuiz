@@ -291,6 +291,7 @@ async function buildCore(competitionId: string): Promise<Core | null> {
         status: q.status,
         correctOptionId: q.correctOptionId as OptionId,
         optionCount: Array.isArray(q.options) ? q.options.length : 0,
+        hasMedia: q.mediaRef !== null,
       })),
     })),
     hasPendingQuestions: flat.some((f) => f.question.status === 'PENDING'),

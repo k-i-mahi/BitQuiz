@@ -40,6 +40,9 @@ type CommandInput = Command extends infer C ? (C extends unknown ? Omit<C, 'revi
 
 export type SendCommand = (command: CommandInput, successMessage?: string) => Promise<boolean>;
 
+/** How long the main button ignores presses after a step, so a double click runs one step. */
+const STEP_SETTLE_MS = 500;
+
 const DISPLAY_MODES: Array<{ mode: DisplayMode; label: string; key: string }> = [
   { mode: 'LOBBY', label: 'Lobby', key: '' },
   { mode: 'QUESTION', label: 'Question', key: 'Q' },
@@ -95,18 +98,34 @@ export function ConsolePage() {
     ? nextStep(state.question.status, state.hasPendingQuestions)
     : nextStep(null, state?.hasPendingQuestions ?? false);
 
+  // The main button changes its label under the cursor, so a double click (or a held Space) would
+  // run two steps: skip a video's media stage, close answering just opened, or jump past a reveal.
+  // After a press, further presses wait until the step's result is on screen, plus a moment. Steps
+  // changed by the server alone (the timer running out) don't lock the button.
+  const settleUntil = useRef(0);
+  const settle = useCallback(() => {
+    settleUntil.current = Date.now() + STEP_SETTLE_MS;
+  }, []);
+  const stepKey = `${state?.question?.id ?? ''}:${step}`;
+  useEffect(() => {
+    if (Date.now() < settleUntil.current) settle();
+  }, [stepKey, settle]);
+
   const runMainStep = useCallback(() => {
     const s = stateRef.current;
     if (!s || s.competition.status !== 'LIVE') return;
+    if (Date.now() < settleUntil.current) return;
+    settle();
+    const run = (command: CommandInput) => void send(command).finally(settle);
     const current = s.question?.status ?? null;
     const action = nextStep(current, s.hasPendingQuestions);
-    if (action === 'OPEN') void send({ type: 'OPEN_QUESTION' });
-    else if (action === 'CLOSE') void send({ type: 'CLOSE_QUESTION' });
-    else if (action === 'REVEAL') void send({ type: 'REVEAL' });
-    // DETAILS: the media is on screen; showing again reveals the question text and options.
-    else if (action === 'SHOW' || action === 'NEXT' || action === 'DETAILS') void send({ type: 'SHOW_QUESTION' });
+    if (action === 'OPEN') run({ type: 'OPEN_QUESTION' });
+    else if (action === 'CLOSE') run({ type: 'CLOSE_QUESTION' });
+    else if (action === 'REVEAL') run({ type: 'REVEAL' });
+    // DETAILS: the media is on screen; showing again replaces it with the question and options.
+    else if (action === 'SHOW' || action === 'NEXT' || action === 'DETAILS') run({ type: 'SHOW_QUESTION' });
     else if (action === 'FINISH') setConfirmFinish(true);
-  }, [send]);
+  }, [send, settle]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -117,6 +136,7 @@ export function ConsolePage() {
       if (!s) return;
       if (event.code === 'Space' && target.tagName !== 'BUTTON') {
         event.preventDefault();
+        if (event.repeat) return;
         runMainStep();
       } else if (event.key.toLowerCase() === 'l') void send({ type: 'SET_DISPLAY', mode: 'LEADERBOARD' });
       else if (event.key.toLowerCase() === 'q') void send({ type: 'SET_DISPLAY', mode: 'QUESTION' });

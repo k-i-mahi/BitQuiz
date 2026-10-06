@@ -114,7 +114,7 @@ function stripRevision(command: Command): Record<string, unknown> {
 // Command handlers
 // ---------------------------------------------------------------------------
 
-/** Stops the projector video (time's up, void, or a question without media). */
+/** Stops the projector video (question shown, void, or a question without media). */
 const stopMedia = { mediaPlaying: false } satisfies Prisma.CompetitionUpdateInput;
 
 /** Playback for a question that is being shown: its video starts from the beginning, otherwise nothing plays. */
@@ -151,9 +151,11 @@ async function apply(tx: Tx, c: Competition, command: Command, now: Date, actor:
     case 'SHOW_QUESTION': {
       requireStatus(c, 'LIVE');
       const current = await currentQuestion(tx, c);
-      // Second step of a media question: the media has been shown, now show the question and options.
+      // Second step of a media question: the media is done; the question and options replace it
+      // (text only, as for any other question), so the video stops.
       if (current?.status === 'MEDIA' && (!command.questionId || command.questionId === current.id)) {
         await moveQuestion(tx, current, 'SHOWN', {});
+        await tx.competition.update({ where: { id: c.id }, data: stopMedia });
         return { log: { questionId: current.id, stage: 'details' } };
       }
       await requireNoActiveQuestion(tx, c);
@@ -172,7 +174,6 @@ async function apply(tx: Tx, c: Competition, command: Command, now: Date, actor:
       requireStatus(c, 'LIVE');
       const current = await currentQuestion(tx, c);
       let target: QuestionWithRound;
-      let newlyShown = false;
       if (
         current &&
         (current.status === 'SHOWN' || current.status === 'MEDIA') &&
@@ -183,15 +184,16 @@ async function apply(tx: Tx, c: Competition, command: Command, now: Date, actor:
         // "Show + Open" in one step.
         await requireNoActiveQuestion(tx, c);
         target = await pickQuestion(tx, c, command.questionId);
-        newlyShown = true;
+        // Media always comes first, on its own; it can't be skipped by opening straight away.
+        if (target.mediaRef) throw invalid('This question starts with its media: use "Show next question"');
       }
       const { timeLimitSec } = questionRule(target, target.round);
       const endsAt = new Date(now.getTime() + timeLimitSec * 1000);
       await moveQuestion(tx, target, 'OPEN', { shownAt: target.shownAt ?? now, openedAt: now, endsAt });
       await tx.competition.update({
         where: { id: c.id },
-        // Opening answering leaves a playing video alone; only a newly shown question starts its media.
-        data: { currentQuestionId: target.id, displayMode: 'QUESTION', ...(newlyShown ? mediaFor(target) : {}) },
+        // Answering happens on the text-only question: no video plays while people answer.
+        data: { currentQuestionId: target.id, displayMode: 'QUESTION', ...stopMedia },
       });
       return { schedule: { questionId: target.id, endsAt }, log: { questionId: target.id, timeLimitSec } };
     }
@@ -350,6 +352,7 @@ async function apply(tx: Tx, c: Competition, command: Command, now: Date, actor:
       requireStatus(c, 'LIVE');
       const current = await currentQuestion(tx, c);
       if (!current?.mediaRef || current.mediaKind !== 'VIDEO') throw invalid('The current question has no video');
+      if (current.status !== 'MEDIA') throw invalid('The video is only on screen before the question is shown');
       await tx.competition.update({
         where: { id: c.id },
         data: command.type === 'MEDIA_RESTART' ? startMedia : { mediaPlaying: command.type === 'MEDIA_PLAY' },

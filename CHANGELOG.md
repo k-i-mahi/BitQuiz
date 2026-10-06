@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] - 2026-10-06
+
+### Changed
+
+- **Media, then a text-only question.** A question with an image or video shows the media alone first. **Show question & options** now stops the video and replaces it with the question and options in the plain text layout, instead of showing them beside the media. Nobody answers while a video is playing, and the screen is never split. Video controls are only available while the media is on screen.
+- The media stage can't be skipped: **Show + open next** isn't offered (and the server refuses it) when the next question has media.
+
+### Fixed
+
+- **A double click on the main console button ran two steps.** The button's label changes under the cursor, so a second click skipped a video's media stage, closed answering the moment it opened, or jumped past a reveal. After a click, the button now waits until the step has taken effect. Holding Space no longer repeats steps.
+
 ## [1.3.2] - 2026-10-06
 
 ### Fixed
