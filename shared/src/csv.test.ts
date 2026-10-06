@@ -8,7 +8,13 @@ describe('parseQuestionCsv', () => {
   it('parses the bundled template without errors', () => {
     const result = parseQuestionCsv(QUESTION_CSV_TEMPLATE);
     expect(result.errors).toEqual([]);
-    expect(result.questions).toHaveLength(3);
+    expect(result.questions).toHaveLength(4);
+    expect(result.questions[3]).toMatchObject({
+      mediaKind: 'IMAGE',
+      mediaSource: 'LINK',
+      mediaOnPhones: true,
+    });
+    expect(result.questions[0]).toMatchObject({ mediaKind: null, mediaSource: null, mediaRef: null });
     expect(result.questions[1]).toMatchObject({
       round: 1,
       options: [{ id: 'A' }, { id: 'B' }],
@@ -42,6 +48,33 @@ describe('parseQuestionCsv', () => {
   it('assigns order automatically when the column is empty', () => {
     const csv = `${header}\n1,,Q1,,,a,b,,,,,A,,,,\n1,,Q2,,,a,b,,,,,B,,,,`;
     expect(parseQuestionCsv(csv).questions.map((q) => q.order)).toEqual([1, 2]);
+  });
+});
+
+describe('parseQuestionCsv media columns', () => {
+  const mediaHeader = `${header},media_type,media,media_on_phones`;
+  const row = (media: string) => `${mediaHeader}\n1,1,Which algorithm?,,,a,b,,,,,A,,,,,${media}`;
+
+  it('treats a non-link as a file on the projector computer', () => {
+    const [q] = parseQuestionCsv(row('video,round1-q1.mp4,')).questions;
+    expect(q).toMatchObject({
+      mediaKind: 'VIDEO',
+      mediaSource: 'LOCAL',
+      mediaRef: 'round1-q1.mp4',
+      mediaOnPhones: false,
+    });
+  });
+
+  it('accepts a YouTube link as a video', () => {
+    const [q] = parseQuestionCsv(row('video,https://youtu.be/dQw4w9WgXcQ,no')).questions;
+    expect(q).toMatchObject({ mediaKind: 'VIDEO', mediaSource: 'LINK' });
+  });
+
+  it('reports missing type, unknown type and phones for videos', () => {
+    expect(parseQuestionCsv(row(',clip.mp4,')).errors[0]?.message).toMatch(/media_type is required/);
+    expect(parseQuestionCsv(row('audio,clip.mp3,')).errors[0]?.message).toMatch(/image or video/);
+    expect(parseQuestionCsv(row('video,https://youtu.be/dQw4w9WgXcQ,yes')).errors[0]?.message).toMatch(/linked images/);
+    expect(parseQuestionCsv(row('video,clip.txt,')).errors[0]?.message).toMatch(/must end with/);
   });
 });
 

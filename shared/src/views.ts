@@ -1,4 +1,5 @@
 import type { AdminRole, AdminStatus, CompetitionStatus, DisplayMode, OptionId, QuestionStatus } from './enums';
+import type { MediaKind, MediaSource } from './media';
 import type { QuizOption } from './schemas';
 import type { RankedRow } from './scoring';
 
@@ -13,6 +14,8 @@ export interface CompetitionView {
   displayMode: DisplayMode;
   holdMessage: string | null;
   leaderboardFrozen: boolean;
+  /** Video playback on the projector, controlled from the console. */
+  media: MediaPlayback;
 }
 
 export interface QuestionView {
@@ -39,6 +42,23 @@ export interface QuestionView {
   explanation?: string | null;
   /** Answer counts per option; GM always, screen after reveal. */
   distribution?: Partial<Record<OptionId, number>>;
+  /** Image or video for this question. Phones only get it for linked images marked "show on phones". */
+  media: QuestionMedia | null;
+  /** True for phones when the projector shows media they don't receive (e.g. a video). */
+  watchScreen: boolean;
+}
+
+export interface QuestionMedia {
+  kind: MediaKind;
+  source: MediaSource;
+  ref: string;
+  onPhones: boolean;
+}
+
+export interface MediaPlayback {
+  playing: boolean;
+  /** Increases on every restart; screens seek to the start when it changes. */
+  restartCount: number;
 }
 
 export interface LeaderboardEntry {
@@ -81,6 +101,8 @@ export interface ScreenState extends BaseState {
   joinUrl: string;
   leaderboard: LeaderboardEntry[];
   answeredCount: number;
+  /** File names the projector must load from its own disk (media stored as "file on projector computer"). */
+  localMediaFiles: string[];
 }
 
 export interface RunSheetQuestion {
@@ -126,6 +148,7 @@ export interface GmState extends BaseState {
   leaderboard: RankedRow[];
   participants: ParticipantSummary[];
   stats: GmStats;
+  localMediaFiles: string[];
 }
 
 export type AnyState = ParticipantState | ScreenState | GmState;

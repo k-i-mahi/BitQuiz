@@ -1,5 +1,6 @@
 import Papa from 'papaparse';
 import { CODE_LANGUAGES, OPTION_IDS, type CodeLanguage, type OptionId } from './enums';
+import type { MediaKind } from './media';
 import { questionSchema, type QuestionInput } from './schemas';
 
 /** Byte-order mark: Excel needs it to read UTF-8 CSV files, so exports start with it and imports strip it. */
@@ -23,6 +24,9 @@ export const QUESTION_CSV_COLUMNS = [
   'min_points',
   'time_limit',
   'explanation',
+  'media_type',
+  'media',
+  'media_on_phones',
 ] as const;
 
 export interface ImportedQuestion extends QuestionInput {
@@ -100,6 +104,17 @@ export function parseQuestionCsv(text: string): QuestionCsvResult {
       if (n === null) rowErrors.push(`${label} must be a whole number`);
       return n;
     };
+    const mediaType = get('media_type').toUpperCase();
+    const mediaRef = get('media');
+    if (mediaType && mediaType !== 'IMAGE' && mediaType !== 'VIDEO') {
+      rowErrors.push('media_type must be image or video');
+    }
+    if (mediaRef && !mediaType) rowErrors.push('media_type is required when media is set');
+    if (mediaType && !mediaRef) rowErrors.push('media is required when media_type is set');
+    const onPhonesRaw = get('media_on_phones').toLowerCase();
+    if (onPhonesRaw && !['yes', 'no', 'true', 'false', '1', '0'].includes(onPhonesRaw)) {
+      rowErrors.push('media_on_phones must be yes or no');
+    }
     const maxPoints = optionalInt('max_points', 'max_points');
     const minPoints = optionalInt('min_points', 'min_points');
     const timeLimit = optionalInt('time_limit', 'time_limit');
@@ -125,6 +140,11 @@ export function parseQuestionCsv(text: string): QuestionCsvResult {
       timeLimitSec: timeLimit,
       maxPoints,
       minPoints,
+      mediaKind: mediaRef ? (mediaType as MediaKind) : null,
+      // A link starts with https://; anything else is a file name on the projector computer.
+      mediaSource: mediaRef ? (/^https?:\/\//i.test(mediaRef) ? 'LINK' : 'LOCAL') : null,
+      mediaRef: mediaRef || null,
+      mediaOnPhones: ['yes', 'true', '1'].includes(onPhonesRaw),
     };
 
     const result = questionSchema.safeParse(candidate);
@@ -145,6 +165,9 @@ export function parseQuestionCsv(text: string): QuestionCsvResult {
   return { questions, errors };
 }
 
+// One example per feature: plain MCQ, True/False, code, and an image shown on the projector and phones.
+// Columns: round, order, question, code, code_language, option_a..option_f, correct, max_points,
+// min_points, time_limit, explanation, media_type, media, media_on_phones.
 export const QUESTION_CSV_TEMPLATE = toCsv(
   [...QUESTION_CSV_COLUMNS],
   [
@@ -165,6 +188,9 @@ export const QUESTION_CSV_TEMPLATE = toCsv(
       50,
       20,
       'Dijkstra repeatedly takes the closest unvisited vertex from a priority queue.',
+      '',
+      '',
+      '',
     ],
     [
       1,
@@ -182,6 +208,9 @@ export const QUESTION_CSV_TEMPLATE = toCsv(
       '',
       '',
       15,
+      '',
+      '',
+      '',
       '',
     ],
     [
@@ -201,6 +230,30 @@ export const QUESTION_CSV_TEMPLATE = toCsv(
       100,
       30,
       '',
+      '',
+      '',
+      '',
+    ],
+    [
+      2,
+      2,
+      'Which algorithm is shown in the animation?',
+      '',
+      '',
+      'Breadth-first search',
+      'Dijkstra',
+      'Bellman-Ford',
+      'A* search',
+      '',
+      '',
+      'B',
+      200,
+      100,
+      30,
+      'Nodes are settled in order of distance from the start.',
+      'image',
+      'https://upload.wikimedia.org/wikipedia/commons/5/57/Dijkstra_Animation.gif',
+      'yes',
     ],
   ],
 );

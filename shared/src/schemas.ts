@@ -8,6 +8,7 @@ import {
   MIN_OPTIONS,
   OPTION_IDS,
 } from './enums';
+import { MEDIA_KINDS, MEDIA_REF_MAX, MEDIA_SOURCES, mediaProblem } from './media';
 
 // ---------------------------------------------------------------------------
 // Primitive limits
@@ -140,8 +141,33 @@ export const questionSchema = z
     timeLimitSec: z.number().int().min(LIMITS.timeLimitMinSec).max(LIMITS.timeLimitMaxSec).nullable(),
     maxPoints: scoringFields.maxPoints.nullable(),
     minPoints: scoringFields.minPoints.nullable(),
+    mediaKind: z.enum(MEDIA_KINDS).nullable().default(null),
+    mediaSource: z.enum(MEDIA_SOURCES).nullable().default(null),
+    mediaRef: z.string().trim().max(MEDIA_REF_MAX).nullable().default(null),
+    /** Also show an image on participants' phones (images from links only). */
+    mediaOnPhones: z.boolean().default(false),
   })
   .superRefine((q, ctx) => {
+    const mediaSet = [q.mediaKind, q.mediaSource, q.mediaRef].filter((v) => v !== null && v !== '').length;
+    if (mediaSet !== 0 && mediaSet !== 3) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Choose the media type, where it comes from, and the link or file',
+        path: ['mediaRef'],
+      });
+    } else if (q.mediaKind && q.mediaSource && q.mediaRef) {
+      const problem = mediaProblem({ kind: q.mediaKind, source: q.mediaSource, ref: q.mediaRef });
+      if (problem) ctx.addIssue({ code: 'custom', message: problem, path: ['mediaRef'] });
+      if (q.mediaOnPhones && (q.mediaKind !== 'IMAGE' || q.mediaSource !== 'LINK')) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Only linked images can also be shown on phones',
+          path: ['mediaOnPhones'],
+        });
+      }
+    } else if (q.mediaOnPhones) {
+      ctx.addIssue({ code: 'custom', message: 'Add an image before showing it on phones', path: ['mediaOnPhones'] });
+    }
     const ids = q.options.map((o) => o.id);
     const expected = OPTION_IDS.slice(0, q.options.length);
     if (ids.some((id, i) => id !== expected[i])) {
@@ -240,6 +266,10 @@ export const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('UNKICK'), participantId: z.uuid(), ...optRev }),
   z.object({ type: z.literal('RESET_DEVICE'), participantId: z.uuid(), ...optRev }),
   z.object({ type: z.literal('EDIT_NAME'), participantId: z.uuid(), name: nameSchema, ...optRev }),
+  // Video on the projector. No revision needed: repeating them is harmless.
+  z.object({ type: z.literal('MEDIA_PLAY'), ...optRev }),
+  z.object({ type: z.literal('MEDIA_PAUSE'), ...optRev }),
+  z.object({ type: z.literal('MEDIA_RESTART'), ...optRev }),
   z.object({ type: z.literal('FINISH'), ...rev }),
 ]);
 export type Command = z.infer<typeof commandSchema>;

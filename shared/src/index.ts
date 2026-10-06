@@ -4,3 +4,4 @@ export * from './schemas';
 export * from './scoring';
 export * from './views';
 export * from './csv';
+export * from './media';

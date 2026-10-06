@@ -56,12 +56,23 @@ export const COMMAND_TYPES = [
   'UNKICK',
   'RESET_DEVICE',
   'EDIT_NAME',
+  'MEDIA_PLAY',
+  'MEDIA_PAUSE',
+  'MEDIA_RESTART',
   'FINISH',
 ] as const;
 export type CommandType = (typeof COMMAND_TYPES)[number];
 
 /** Commands that manage participants rather than the quiz flow; they don't need a matching revision. */
 export const PARTICIPANT_COMMANDS: readonly CommandType[] = ['KICK', 'UNKICK', 'RESET_DEVICE', 'EDIT_NAME'];
+
+/** Commands applied without quoting the current revision: repeatable and never move the quiz forward. */
+export const REVISION_FREE_COMMANDS: readonly CommandType[] = [
+  ...PARTICIPANT_COMMANDS,
+  'MEDIA_PLAY',
+  'MEDIA_PAUSE',
+  'MEDIA_RESTART',
+];
 
 /** Machine-readable error codes returned by the API. */
 export const ERROR_CODES = {
