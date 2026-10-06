@@ -33,6 +33,7 @@ import { FullPageSpinner } from '@/components/ui/spinner';
 import { ApiError, api, errorMessage } from '@/lib/api';
 import { useAdminSession } from '@/lib/auth';
 import { useLive } from '@/lib/live';
+import { UpdateBanner } from '@/lib/version';
 import { cn } from '@/lib/utils';
 
 type CommandInput = Command extends infer C ? (C extends unknown ? Omit<C, 'revision'> : never) : never;
@@ -167,6 +168,8 @@ export function ConsolePage() {
   return (
     <div className="flex min-h-dvh flex-col">
       <ConnectionBanner status={status} />
+      {/* The organizer decides when to reload: the quiz state is safe on the server. */}
+      <UpdateBanner serverBuildId={state.buildId} />
       <header className="border-b border-line bg-surface/70 backdrop-blur">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-5 py-3">
           <Link to="/admin" className="text-muted hover:text-fg" aria-label="Back to competitions">

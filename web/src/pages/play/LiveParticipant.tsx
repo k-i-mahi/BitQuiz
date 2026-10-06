@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { FullPageSpinner } from '@/components/ui/spinner';
 import { ApiError, api } from '@/lib/api';
 import { useLive } from '@/lib/live';
+import { UpdateBanner, useAutoUpdate } from '@/lib/version';
 import { cn, formatSeconds, randomId } from '@/lib/utils';
 
 interface Props {
@@ -33,6 +34,8 @@ type Submission =
 export function LiveParticipant({ token, onSignedOut }: Props) {
   const { state, me, status, kicked, clock } = useLive<ParticipantState>({ role: 'participant', token });
   useWakeLock();
+  // A phone running an older build reloads itself, but never while answering is open.
+  useAutoUpdate(state?.buildId, state?.question?.status !== 'OPEN');
 
   useEffect(() => {
     if (kicked === 'reset') onSignedOut('The organizer reset your device. Join again with the same name and roll.');
@@ -45,6 +48,7 @@ export function LiveParticipant({ token, onSignedOut }: Props) {
   return (
     <div className="flex min-h-dvh flex-col">
       <ConnectionBanner status={status} />
+      <UpdateBanner serverBuildId={state.buildId} />
       <header className="flex items-center justify-between gap-3 border-b border-line bg-surface/70 px-4 py-3 backdrop-blur">
         <Logo size="sm" />
         <div className="min-w-0 text-right">

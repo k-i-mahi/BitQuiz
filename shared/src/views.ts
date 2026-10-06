@@ -84,6 +84,8 @@ export interface ParticipantMe {
 }
 
 export interface BaseState {
+  /** Web build the server is serving; screens running an older build reload. Null in development. */
+  buildId: string | null;
   revision: number;
   /** Server clock at the moment the snapshot was built (ms since epoch). */
   serverNow: number;

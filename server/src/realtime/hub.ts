@@ -15,6 +15,7 @@ import {
 } from '@bitquiz/shared';
 import { adminFromCookieHeader, participantFromToken } from '../auth/session';
 import { env } from '../env';
+import { webBuildId } from '../lib/build';
 import { prisma } from '../lib/db';
 import { logger } from '../lib/logger';
 import { getBoards } from '../scoring/leaderboard';
@@ -353,6 +354,7 @@ function compose(core: Core, live: LiveStats) {
   const questionFor = (role: ViewerRole) =>
     core.current ? toQuestionView(role, core.current.question, core.current.round, core.position, distribution) : null;
   const base = {
+    buildId: webBuildId(),
     revision: core.revision,
     serverNow,
     competition: core.competition,

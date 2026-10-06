@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.3.1] - 2026-10-06
+
+### Fixed
+
+- Screens opened before a deploy kept running the previous version's code. On the last question of a quiz this made the console offer "Finish quiz" while a media question was still on screen. Every screen now knows which version the server runs: the console shows a "BitQuiz was updated" bar with **Reload now**, the projector reloads itself, and phones reload themselves once answering is closed (never mid-answer). Automatic reloads happen at most once per version, so a stale cache can't cause a reload loop.
+
 ## [1.3.0] - 2026-10-06
 
 ### Added

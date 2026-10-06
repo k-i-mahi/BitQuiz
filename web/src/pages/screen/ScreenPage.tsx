@@ -7,6 +7,7 @@ import type { LeaderboardEntry, MediaPlayback, OptionId, QuestionView, ScreenSta
 import { CodeBlock, Logo, OptionLetter, TimerBar, TimerNumber, useRemaining } from '@/components/quiz';
 import { Button } from '@/components/ui/button';
 import { useLive } from '@/lib/live';
+import { UpdateBanner, useAutoUpdate } from '@/lib/version';
 import { useLocalMedia, type LocalMediaUrls } from '@/lib/localMedia';
 import { MediaView } from '@/components/MediaView';
 import { LocalMediaButton } from './LocalMediaButton';
@@ -18,6 +19,8 @@ export function ScreenPage() {
   const { state, status, clock } = useLive<ScreenState>({ role: 'screen', token });
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
   const localMedia = useLocalMedia();
+  // The projector has nothing to lose: an older build reloads itself right away.
+  useAutoUpdate(state?.buildId, true);
 
   useEffect(() => {
     const onChange = () => setFullscreen(Boolean(document.fullscreenElement));
@@ -48,6 +51,7 @@ export function ScreenPage() {
 
   return (
     <Shell>
+      <UpdateBanner serverBuildId={state.buildId} />
       <header className="flex items-center justify-between px-[3vw] pt-[2.5vh]">
         <Logo className="text-[2.2vw]" />
         <div className="flex items-center gap-6 text-[1.4vw] text-muted">

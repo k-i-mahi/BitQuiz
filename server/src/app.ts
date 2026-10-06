@@ -1,6 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import express, { type Express, type RequestHandler } from 'express';
 import helmet from 'helmet';
 import { teamRouter } from './team/routes';
@@ -8,13 +7,12 @@ import { answersRouter } from './answers/routes';
 import { authRouter } from './auth/routes';
 import { competitionsRouter } from './competitions/routes';
 import { env, isProduction } from './env';
+import { webDistPath } from './lib/build';
 import { prisma } from './lib/db';
 import { logger } from './lib/logger';
 import { errorHandler, notFoundHandler } from './lib/errors';
 import { apiLimiter } from './lib/rateLimit';
 import { participantsRouter } from './participants/routes';
-
-const here = path.dirname(fileURLToPath(import.meta.url));
 
 /** Logs failed and slow API requests (path only: query strings can carry tokens). Everything else at debug. */
 const requestLog: RequestHandler = (req, res, next) => {
@@ -93,7 +91,7 @@ export function createApp(): Express {
   api.use(notFoundHandler);
   app.use('/api', api);
 
-  const webDist = env.WEB_DIST ?? path.resolve(here, '../../web/dist');
+  const webDist = webDistPath();
   if (existsSync(webDist)) {
     app.use(
       express.static(webDist, {
