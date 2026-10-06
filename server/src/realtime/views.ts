@@ -1,4 +1,12 @@
-import type { CompetitionView, OptionId, QuestionStatus, QuestionView, QuizOption, ViewerRole } from '@bitquiz/shared';
+import type {
+  CompetitionView,
+  OptionId,
+  QuestionMedia,
+  QuestionStatus,
+  QuestionView,
+  QuizOption,
+  ViewerRole,
+} from '@bitquiz/shared';
 
 export interface QuestionRecord {
   id: string;
@@ -15,6 +23,10 @@ export interface QuestionRecord {
   status: QuestionStatus;
   openedAt: Date | null;
   endsAt: Date | null;
+  mediaKind: 'IMAGE' | 'VIDEO' | null;
+  mediaSource: 'LINK' | 'LOCAL' | null;
+  mediaRef: string | null;
+  mediaOnPhones: boolean;
 }
 
 export interface RoundRecord {
@@ -35,6 +47,8 @@ export interface CompetitionRecord {
   displayMode: CompetitionView['displayMode'];
   holdMessage: string | null;
   leaderboardFrozenAt: Date | null;
+  mediaPlaying: boolean;
+  mediaRestartCount: number;
 }
 
 /** Effective time limit and scoring for a question, falling back to its round's defaults. */
@@ -56,7 +70,24 @@ export function toCompetitionView(c: CompetitionRecord): CompetitionView {
     displayMode: c.displayMode,
     holdMessage: c.holdMessage,
     leaderboardFrozen: c.leaderboardFrozenAt !== null,
+    media: { playing: c.mediaPlaying, restartCount: c.mediaRestartCount },
   };
+}
+
+/**
+ * Media a role receives. The projector and console get everything; phones only get linked images
+ * marked "show on phones", so 300 phones never download a video.
+ */
+export function mediaFor(role: ViewerRole, question: QuestionRecord): QuestionMedia | null {
+  if (!question.mediaKind || !question.mediaSource || !question.mediaRef) return null;
+  const media: QuestionMedia = {
+    kind: question.mediaKind,
+    source: question.mediaSource,
+    ref: question.mediaRef,
+    onPhones: question.mediaOnPhones,
+  };
+  if (role !== 'participant') return media;
+  return media.onPhones && media.kind === 'IMAGE' && media.source === 'LINK' ? media : null;
 }
 
 /** May this viewer see the correct answer of a question in this state? */
@@ -93,6 +124,8 @@ export function toQuestionView(
     wrongPenalty: rule.wrongPenalty,
     openedAt: question.openedAt?.toISOString() ?? null,
     endsAt: question.endsAt?.toISOString() ?? null,
+    media: mediaFor(role, question),
+    watchScreen: role === 'participant' && question.mediaRef !== null && mediaFor(role, question) === null,
   };
   if (answerVisibleTo(role, question.status)) {
     view.correctOptionId = question.correctOptionId as OptionId;

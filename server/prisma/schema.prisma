@@ -43,6 +43,17 @@ enum QuestionStatus {
   VOID
 }
 
+enum MediaKind {
+  IMAGE
+  VIDEO
+}
+
+/// LINK: hosted elsewhere (YouTube, Drive, any https URL). LOCAL: a file loaded on the projector computer.
+enum MediaSource {
+  LINK
+  LOCAL
+}
+
 enum DisplayMode {
   LOBBY
   QUESTION
@@ -132,6 +143,9 @@ model Competition {
   holdMessage         String?
   /// Set while the public leaderboard is frozen; public ranks only count questions revealed before it.
   leaderboardFrozenAt DateTime?
+  /// Projector video playback, controlled from the console.
+  mediaPlaying        Boolean           @default(false)
+  mediaRestartCount   Int               @default(0)
   currentQuestionId   String?           @db.Uuid
   projectorToken      String            @unique
   /// Incremented on every state change; commands must quote the revision they were issued against.
@@ -177,6 +191,12 @@ model Question {
   timeLimitSec    Int?
   maxPoints       Int?
   minPoints       Int?
+  mediaKind       MediaKind?
+  mediaSource     MediaSource?
+  /// https link, or a file name when mediaSource is LOCAL. Media files are never stored by BitQuiz.
+  mediaRef        String?
+  /// Also show the image on participants' phones (linked images only).
+  mediaOnPhones   Boolean        @default(false)
   status          QuestionStatus @default(PENDING)
   shownAt         DateTime?
   openedAt        DateTime?

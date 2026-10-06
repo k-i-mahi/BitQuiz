@@ -58,6 +58,10 @@ function questionData(input: QuestionInput) {
     timeLimitSec: input.timeLimitSec,
     maxPoints: input.maxPoints,
     minPoints: input.minPoints,
+    mediaKind: input.mediaRef ? input.mediaKind : null,
+    mediaSource: input.mediaRef ? input.mediaSource : null,
+    mediaRef: input.mediaRef || null,
+    mediaOnPhones: input.mediaRef ? input.mediaOnPhones : false,
   };
 }
 
@@ -200,6 +204,10 @@ competitionsRouter.post('/:id/duplicate', async (req, res) => {
             timeLimitSec: q.timeLimitSec,
             maxPoints: q.maxPoints,
             minPoints: q.minPoints,
+            mediaKind: q.mediaKind,
+            mediaSource: q.mediaSource,
+            mediaRef: q.mediaRef,
+            mediaOnPhones: q.mediaOnPhones,
           })),
         },
       })),

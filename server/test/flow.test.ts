@@ -116,7 +116,7 @@ describe.skipIf(!hasDatabase)('full quiz flow (integration)', () => {
       .post(`/api/competitions/${competitionId}/import`)
       .set(CSRF)
       .send({ csv: QUESTION_CSV_TEMPLATE, mode: 'replace' });
-    expect(imported.body).toEqual({ imported: 3 });
+    expect(imported.body).toEqual({ imported: 4 });
 
     const detail = await agent.get(`/api/competitions/${competitionId}`);
     joinCode = detail.body.joinCode;
@@ -233,7 +233,12 @@ describe.skipIf(!hasDatabase)('full quiz flow (integration)', () => {
     sockets.push(gm);
     const gmState = await waitFor<GmState>(gm, 'state', () => true);
     expect(gmState.competition.status).toBe('FINISHED');
-    expect(gmState.runSheet.flatMap((r) => r.questions).map((q) => q.status)).toEqual(['REVEALED', 'VOID', 'PENDING']);
+    expect(gmState.runSheet.flatMap((r) => r.questions).map((q) => q.status)).toEqual([
+      'REVEALED',
+      'VOID',
+      'PENDING',
+      'PENDING',
+    ]);
 
     const csv = await agent.get(`/api/competitions/${competitionId}/results.csv`);
     expect(csv.text).toContain('2107044');

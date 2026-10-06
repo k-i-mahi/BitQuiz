@@ -47,7 +47,11 @@ export function createApp(): Express {
           'script-src': ["'self'"],
           // Motion and the code highlighter set inline style attributes.
           'style-src': ["'self'", "'unsafe-inline'"],
-          'img-src': ["'self'", 'data:'],
+          // Question media is linked from other sites (images over https, YouTube and Drive players)
+          // or loaded from the projector's disk as blob: URLs. Nothing else may be embedded.
+          'img-src': ["'self'", 'data:', 'blob:', 'https:'],
+          'media-src': ["'self'", 'blob:', 'https:'],
+          'frame-src': ['https://www.youtube-nocookie.com', 'https://drive.google.com'],
           'font-src': ["'self'", 'data:'],
           'connect-src': ["'self'", 'ws:', 'wss:'],
           'upgrade-insecure-requests': isProduction ? [] : null,

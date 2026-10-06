@@ -3,6 +3,7 @@ import { Server, type Socket } from 'socket.io';
 import {
   ACTIVE_QUESTION_STATUSES,
   SOCKET_EVENTS,
+  localMediaFiles,
   type GmState,
   type OptionId,
   type ParticipantMe,
@@ -212,6 +213,7 @@ interface Core {
   activeCount: number;
   liveBoard: RankedRow[];
   publicBoard: RankedRow[];
+  localMediaFiles: string[];
 }
 
 interface LiveStats {
@@ -295,6 +297,9 @@ async function buildCore(competitionId: string): Promise<Core | null> {
     activeCount: competition.participants.filter((p) => !p.kicked).length,
     liveBoard: boards.live,
     publicBoard: boards.public,
+    localMediaFiles: localMediaFiles(
+      flat.map((f) => ({ source: f.question.mediaSource ?? undefined, ref: f.question.mediaRef ?? undefined })),
+    ),
   };
 }
 
@@ -375,6 +380,7 @@ function compose(core: Core, live: LiveStats) {
       hasDevice: p.tokenHash !== null,
       joinedAt: p.joinedAt.toISOString(),
     })),
+    localMediaFiles: core.localMediaFiles,
     stats: {
       joined: active.length,
       connected: active.filter((p) => presence.has(p.id)).length,
@@ -397,6 +403,7 @@ function compose(core: Core, live: LiveStats) {
       correct: r.correct,
     })),
     answeredCount: answered,
+    localMediaFiles: core.localMediaFiles,
   };
 
   const participant: ParticipantState = { ...base, role: 'participant', question: questionFor('participant') };

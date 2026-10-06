@@ -1,7 +1,7 @@
 import {
   ACTIVE_QUESTION_STATUSES,
   ERROR_CODES,
-  PARTICIPANT_COMMANDS,
+  REVISION_FREE_COMMANDS,
   canMoveCompetition,
   canMoveQuestion,
   canRegrade,
@@ -44,7 +44,7 @@ const invalid = (message: string) => conflict(ERROR_CODES.INVALID_TRANSITION, me
  * a 409 is returned so a double click can never advance the quiz twice.
  */
 export async function executeCommand(competitionId: string, command: Command, actor: Actor): Promise<CommandResult> {
-  const needsRevision = actor.kind === 'admin' && !PARTICIPANT_COMMANDS.includes(command.type);
+  const needsRevision = actor.kind === 'admin' && !REVISION_FREE_COMMANDS.includes(command.type);
 
   for (let attempt = 0; ; attempt++) {
     try {
@@ -113,6 +113,9 @@ function stripRevision(command: Command): Record<string, unknown> {
 // Command handlers
 // ---------------------------------------------------------------------------
 
+/** Starts the current question's video from the beginning on every projector screen. */
+const startMedia = { mediaPlaying: true, mediaRestartCount: { increment: 1 } } satisfies Prisma.CompetitionUpdateInput;
+
 type QuestionWithRound = Question & { round: Round };
 
 async function apply(tx: Tx, c: Competition, command: Command, now: Date, actor: Actor): Promise<Effects> {
@@ -143,7 +146,7 @@ async function apply(tx: Tx, c: Competition, command: Command, now: Date, actor:
       await moveQuestion(tx, target, 'SHOWN', { shownAt: now });
       await tx.competition.update({
         where: { id: c.id },
-        data: { currentQuestionId: target.id, displayMode: 'QUESTION' },
+        data: { currentQuestionId: target.id, displayMode: 'QUESTION', ...startMedia },
       });
       return { log: { questionId: target.id } };
     }
@@ -164,7 +167,7 @@ async function apply(tx: Tx, c: Competition, command: Command, now: Date, actor:
       await moveQuestion(tx, target, 'OPEN', { shownAt: target.shownAt ?? now, openedAt: now, endsAt });
       await tx.competition.update({
         where: { id: c.id },
-        data: { currentQuestionId: target.id, displayMode: 'QUESTION' },
+        data: { currentQuestionId: target.id, displayMode: 'QUESTION', ...startMedia },
       });
       return { schedule: { questionId: target.id, endsAt }, log: { questionId: target.id, timeLimitSec } };
     }
@@ -249,6 +252,10 @@ async function apply(tx: Tx, c: Competition, command: Command, now: Date, actor:
           timeLimitSec: question.timeLimitSec,
           maxPoints: question.maxPoints,
           minPoints: question.minPoints,
+          mediaKind: question.mediaKind,
+          mediaSource: question.mediaSource,
+          mediaRef: question.mediaRef,
+          mediaOnPhones: question.mediaOnPhones,
         },
       });
       return { log: { questionId: question.id, copyId: copy.id } };
@@ -310,6 +317,19 @@ async function apply(tx: Tx, c: Competition, command: Command, now: Date, actor:
         scoresChanged: true,
         log: { participantId: participant.id, from: participant.name, to: command.name },
       };
+    }
+
+    case 'MEDIA_PLAY':
+    case 'MEDIA_PAUSE':
+    case 'MEDIA_RESTART': {
+      requireStatus(c, 'LIVE');
+      const current = await currentQuestion(tx, c);
+      if (!current?.mediaRef || current.mediaKind !== 'VIDEO') throw invalid('The current question has no video');
+      await tx.competition.update({
+        where: { id: c.id },
+        data: command.type === 'MEDIA_RESTART' ? startMedia : { mediaPlaying: command.type === 'MEDIA_PLAY' },
+      });
+      return { log: { questionId: current.id } };
     }
 
     case 'FINISH': {
@@ -409,6 +429,10 @@ async function validateContent(tx: Tx, competitionId: string) {
       timeLimitSec: q.timeLimitSec,
       maxPoints: q.maxPoints,
       minPoints: q.minPoints,
+      mediaKind: q.mediaKind,
+      mediaSource: q.mediaSource,
+      mediaRef: q.mediaRef,
+      mediaOnPhones: q.mediaOnPhones,
     });
     if (!result.success) {
       problems.push(`${r.title}, question ${q.order}: ${result.error.issues[0]?.message ?? 'invalid'}`);

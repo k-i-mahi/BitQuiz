@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { QUESTION_STATUSES } from '@bitquiz/shared';
-import { toQuestionView, type QuestionRecord, type RoundRecord } from '../src/realtime/views';
+import { mediaFor, toQuestionView, type QuestionRecord, type RoundRecord } from '../src/realtime/views';
 
 const round: RoundRecord = {
   id: 'r1',
@@ -30,6 +30,10 @@ const question = (status: QuestionRecord['status']): QuestionRecord => ({
   status,
   openedAt: null,
   endsAt: null,
+  mediaKind: null,
+  mediaSource: null,
+  mediaRef: null,
+  mediaOnPhones: false,
 });
 
 const view = (role: 'gm' | 'screen' | 'participant', status: QuestionRecord['status']) =>
@@ -59,5 +63,43 @@ describe('toQuestionView', () => {
 
   it('applies question overrides on top of round defaults', () => {
     expect(view('participant', 'OPEN')).toMatchObject({ timeLimitSec: 20, maxPoints: 200, minPoints: 50 });
+  });
+});
+
+describe('mediaFor', () => {
+  const withMedia = (media: Partial<QuestionRecord>): QuestionRecord => ({ ...question('SHOWN'), ...media });
+  const video = withMedia({ mediaKind: 'VIDEO', mediaSource: 'LINK', mediaRef: 'https://youtu.be/dQw4w9WgXcQ' });
+  const phoneImage = withMedia({
+    mediaKind: 'IMAGE',
+    mediaSource: 'LINK',
+    mediaRef: 'https://example.com/graph.png',
+    mediaOnPhones: true,
+  });
+  const projectorImage = withMedia({ mediaKind: 'IMAGE', mediaSource: 'LOCAL', mediaRef: 'graph.png' });
+
+  it('gives the projector and console every kind of media', () => {
+    for (const q of [video, phoneImage, projectorImage]) {
+      expect(mediaFor('screen', q)).not.toBeNull();
+      expect(mediaFor('gm', q)).not.toBeNull();
+    }
+  });
+
+  it('never sends videos or projector-only images to phones', () => {
+    expect(mediaFor('participant', video)).toBeNull();
+    expect(mediaFor('participant', projectorImage)).toBeNull();
+    expect(mediaFor('participant', { ...video, mediaOnPhones: true })).toBeNull();
+  });
+
+  it('sends linked images marked for phones', () => {
+    expect(mediaFor('participant', phoneImage)).toEqual({
+      kind: 'IMAGE',
+      source: 'LINK',
+      ref: 'https://example.com/graph.png',
+      onPhones: true,
+    });
+  });
+
+  it('returns nothing for questions without media', () => {
+    expect(mediaFor('screen', question('SHOWN'))).toBeNull();
   });
 });
