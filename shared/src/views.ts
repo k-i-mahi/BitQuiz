@@ -159,10 +159,24 @@ export interface PendingInvitation {
   createdAt: string;
 }
 
+export interface EmailDelivery {
+  /** brevo / smtp: real email is sent. log: emails only appear in the server log. */
+  mode: 'brevo' | 'smtp' | 'log';
+  sender: string | null;
+}
+
 export interface TeamView {
   members: TeamMember[];
   invitations: PendingInvitation[];
-  emailDelivery: boolean;
+  email: EmailDelivery;
+}
+
+/** Returned when an invitation is created or re-sent. The owner can always share the link directly. */
+export interface InvitationSent {
+  id: string;
+  inviteUrl: string;
+  emailSent: boolean;
+  emailError: string | null;
 }
 
 export interface InvitationInfo {

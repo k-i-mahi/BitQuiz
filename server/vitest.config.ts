@@ -16,6 +16,7 @@ export default defineConfig({
       ANSWER_GRACE_MS: '1000',
       // Never send real email from tests, even if ../.env has SMTP settings.
       SMTP_HOST: '',
+      BREVO_API_KEY: '',
       LATENCY_CAP_MS: '500',
     },
     fileParallelism: false,

@@ -58,6 +58,9 @@ describe.skipIf(!hasDatabase)('organizer accounts (integration)', () => {
     const invite = await owner.post('/api/team/invitations').set(CSRF).send({ email: inviteeEmail, role: 'OPERATOR' });
     expect(invite.status).toBe(201);
     const token = lastLinkToken(inviteeEmail);
+    // The owner always gets the link to share directly; without email delivery it isn't "sent".
+    expect(invite.body).toMatchObject({ emailSent: false, emailError: null });
+    expect(new URL(invite.body.inviteUrl).searchParams.get('token')).toBe(token);
 
     const info = await request(app).get(`/api/auth/invitations/${token}`);
     expect(info.body).toMatchObject({ email: inviteeEmail, role: 'OPERATOR' });
@@ -94,6 +97,25 @@ describe.skipIf(!hasDatabase)('organizer accounts (integration)', () => {
     expect((await owner.get('/api/team')).body.invitations.map((i: { email: string }) => i.email)).toContain(other);
     expect((await owner.delete(`/api/team/invitations/${created.body.id}`).set(CSRF)).status).toBe(204);
     expect((await request(app).get(`/api/auth/invitations/${token}`)).status).toBe(400);
+  });
+
+  it('reports email settings and refuses a test email when delivery is not configured', async () => {
+    const team = await owner.get('/api/team');
+    expect(team.body.email).toEqual({ mode: 'log', sender: null });
+    const test = await owner.post('/api/team/test-email').set(CSRF);
+    expect(test.status).toBe(409);
+  });
+
+  it('re-sending an invitation issues a new link and retires the old one', async () => {
+    const address = `resend-${suffix}@test.local`;
+    const first = await owner.post('/api/team/invitations').set(CSRF).send({ email: address, role: 'OPERATOR' });
+    const oldToken = new URL(first.body.inviteUrl).searchParams.get('token')!;
+    const resent = await owner.post(`/api/team/invitations/${first.body.id}/resend`).set(CSRF);
+    expect(resent.status).toBe(200);
+    const newToken = new URL(resent.body.inviteUrl).searchParams.get('token')!;
+    expect(newToken).not.toBe(oldToken);
+    expect((await request(app).get(`/api/auth/invitations/${oldToken}`)).status).toBe(400);
+    expect((await request(app).get(`/api/auth/invitations/${newToken}`)).status).toBe(200);
   });
 
   it('resets a forgotten password and signs out old sessions', async () => {

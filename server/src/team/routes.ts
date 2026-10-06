@@ -3,17 +3,18 @@ import {
   ERROR_CODES,
   inviteSchema,
   updateMemberSchema,
+  type InvitationSent,
   type PendingInvitation,
   type TeamMember,
   type TeamView,
 } from '@bitquiz/shared';
-import { sendInvitationEmail } from '../accounts/emails';
+import { sendInvitationEmail, sendTestEmail } from '../accounts/emails';
 import { INVITATION_TTL_MS } from '../accounts/links';
 import { adminOf, requireAdmin, requireOwner, type AuthedAdmin } from '../auth/session';
 import { prisma, type Tx } from '../lib/db';
 import { HttpError, badRequest, idParam, notFound, parse } from '../lib/errors';
 import { logger } from '../lib/logger';
-import { emailConfigured } from '../lib/mailer';
+import { appUrl, emailMode, sender } from '../lib/mailer';
 import { randomToken, sha256 } from '../lib/security';
 
 /** Access control: owners invite people, change roles, suspend, sign out and remove accounts. */
@@ -51,7 +52,7 @@ teamRouter.get('/', async (req, res) => {
       expiresAt: i.expiresAt.toISOString(),
       createdAt: i.createdAt.toISOString(),
     })),
-    emailDelivery: emailConfigured(),
+    email: { mode: emailMode(), sender: emailMode() === 'log' ? null : sender().email || null },
   };
   res.json(view);
 });
@@ -60,11 +61,16 @@ teamRouter.get('/', async (req, res) => {
 // Invitations
 // ---------------------------------------------------------------------------
 
+/**
+ * Emails the invitation and reports the outcome. The invitation stays valid either way and the
+ * owner gets the link, so they can share it directly if email is down or lands in spam.
+ */
 async function deliverInvitation(
   admin: AuthedAdmin,
-  invitation: { email: string; role: TeamMember['role'] },
+  invitation: { id: string; email: string; role: TeamMember['role'] },
   token: string,
-) {
+): Promise<InvitationSent> {
+  const inviteUrl = appUrl('/admin/accept-invite', { token });
   try {
     await sendInvitationEmail({
       to: invitation.email,
@@ -73,9 +79,15 @@ async function deliverInvitation(
       organizationName: admin.organizationName,
       invitedBy: admin.name ?? admin.email,
     });
+    return { id: invitation.id, inviteUrl, emailSent: emailMode() !== 'log', emailError: null };
   } catch (error) {
     logger.error({ err: error }, 'Invitation email failed');
-    throw new HttpError(502, ERROR_CODES.EMAIL_FAILED, "Couldn't send the invitation email. Check the email settings.");
+    return {
+      id: invitation.id,
+      inviteUrl,
+      emailSent: false,
+      emailError: "The email couldn't be sent. Share the invitation link directly instead.",
+    };
   }
 }
 
@@ -105,16 +117,10 @@ teamRouter.post('/invitations', async (req, res) => {
     });
   });
 
-  try {
-    await deliverInvitation(admin, invitation, token);
-  } catch (error) {
-    // Don't leave an invitation nobody can open.
-    await prisma.invitation.delete({ where: { id: invitation.id } }).catch(() => undefined);
-    throw error;
-  }
-  res.status(201).json({ id: invitation.id });
+  res.status(201).json(await deliverInvitation(admin, invitation, token));
 });
 
+/** Issues a fresh link (the old one stops working), extends the expiry and emails it again. */
 teamRouter.post('/invitations/:id/resend', async (req, res) => {
   const admin = adminOf(req);
   const existing = await prisma.invitation.findFirst({
@@ -131,8 +137,31 @@ teamRouter.post('/invitations/:id/resend', async (req, res) => {
     where: { id: existing.id },
     data: { tokenHash: sha256(token), expiresAt: new Date(Date.now() + INVITATION_TTL_MS) },
   });
-  await deliverInvitation(admin, invitation, token);
-  res.status(204).end();
+  res.json(await deliverInvitation(admin, invitation, token));
+});
+
+/** Sends a test message to the signed-in owner so email settings can be checked from the app. */
+teamRouter.post('/test-email', async (req, res) => {
+  const admin = adminOf(req);
+  if (emailMode() === 'log') {
+    throw new HttpError(409, ERROR_CODES.EMAIL_FAILED, 'Email sending is not configured on this server.');
+  }
+  try {
+    await sendTestEmail({ to: admin.email });
+  } catch (error) {
+    logger.error({ err: error }, 'Test email failed');
+    const reason = error instanceof Error ? error.message : 'unknown error';
+    const blocked = emailMode() === 'smtp' && /timeout|ETIMEDOUT|ECONNREFUSED|ECONNRESET/i.test(reason);
+    if (blocked) {
+      throw new HttpError(
+        502,
+        ERROR_CODES.EMAIL_FAILED,
+        'Could not reach the SMTP server. Some hosts (e.g. Render free) block SMTP ports; use Brevo (BREVO_API_KEY) instead.',
+      );
+    }
+    throw new HttpError(502, ERROR_CODES.EMAIL_FAILED, `Sending failed: ${reason}`);
+  }
+  res.json({ sentTo: admin.email, via: emailMode() });
 });
 
 teamRouter.delete('/invitations/:id', async (req, res) => {

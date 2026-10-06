@@ -42,3 +42,16 @@ export function sendVerificationEmail(input: { to: string; token: string }) {
     footnote: "This link expires in 24 hours. If you didn't request it, ignore this email.",
   });
 }
+
+export function sendTestEmail(input: { to: string }) {
+  return sendEmail({
+    to: input.to,
+    subject: 'BitQuiz email is working',
+    paragraphs: [
+      'This is a test message from your BitQuiz server.',
+      'Invitations, password resets and verification emails will be delivered the same way.',
+    ],
+    action: { label: 'Open BitQuiz', url: appUrl('/admin') },
+    footnote: 'You received this because an owner pressed "Send test email" in Team & access.',
+  });
+}

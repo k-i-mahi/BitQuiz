@@ -1,13 +1,27 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Navigate } from 'react-router';
-import { Ban, LogOut, MailPlus, RotateCw, Send, ShieldCheck, Trash2, UserCheck, X } from 'lucide-react';
+import {
+  Ban,
+  CheckCircle2,
+  Copy,
+  LogOut,
+  Mail,
+  MailPlus,
+  RotateCw,
+  Send,
+  ShieldCheck,
+  Trash2,
+  TriangleAlert,
+  UserCheck,
+  X,
+} from 'lucide-react';
 import { toast } from 'sonner';
-import type { AdminRole, TeamMember, TeamView } from '@bitquiz/shared';
+import type { AdminRole, InvitationSent, TeamMember, TeamView } from '@bitquiz/shared';
 import { useAdmin } from './AdminLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
-import { ConfirmDialog } from '@/components/ui/dialog';
+import { ConfirmDialog, Dialog } from '@/components/ui/dialog';
 import { Input, Label, Select } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { api, errorMessage } from '@/lib/api';
@@ -35,6 +49,8 @@ export function TeamPage() {
   const [inviting, setInviting] = useState(false);
   const [pending, setPending] = useState<Pending>(null);
   const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState<(InvitationSent & { email: string }) | null>(null);
+  const [testing, setTesting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -68,8 +84,8 @@ export function TeamPage() {
     event.preventDefault();
     setInviting(true);
     try {
-      await api('/team/invitations', { method: 'POST', body: { email, role } });
-      toast.success(`Invitation sent to ${email}`);
+      const result = await api<InvitationSent>('/team/invitations', { method: 'POST', body: { email, role } });
+      setSent({ ...result, email });
       setEmail('');
       setRole('OPERATOR');
       await load();
@@ -103,11 +119,22 @@ export function TeamPage() {
         <p className="text-sm text-muted">Invite organizers by email and control what each account can do.</p>
       </div>
 
-      {team && !team.emailDelivery && (
-        <div className="rounded-2xl border border-warn/30 bg-warn/10 px-4 py-3 text-sm text-warn">
-          Email sending isn't configured on this server, so invitations are only written to the server log. Set the SMTP
-          settings to send real emails.
-        </div>
+      {team && (
+        <EmailStatus
+          team={team}
+          testing={testing}
+          onTest={async () => {
+            setTesting(true);
+            try {
+              const result = await api<{ sentTo: string }>('/team/test-email', { method: 'POST' });
+              toast.success(`Test email sent to ${result.sentTo}. Check the inbox (and spam).`);
+            } catch (error) {
+              toast.error(errorMessage(error), { duration: 12_000 });
+            } finally {
+              setTesting(false);
+            }
+          }}
+        />
       )}
 
       <Card>
@@ -170,10 +197,12 @@ export function TeamPage() {
                       variant="ghost"
                       disabled={busy}
                       onClick={() =>
-                        run(
-                          () => api(`/team/invitations/${inv.id}/resend`, { method: 'POST' }),
-                          `Invitation re-sent to ${inv.email}`,
-                        )
+                        run(async () => {
+                          const result = await api<InvitationSent>(`/team/invitations/${inv.id}/resend`, {
+                            method: 'POST',
+                          });
+                          setSent({ ...result, email: inv.email });
+                        }, 'New invitation link created')
                       }
                     >
                       <RotateCw className="size-4" aria-hidden /> Resend
@@ -281,6 +310,7 @@ export function TeamPage() {
         </>
       )}
 
+      <InvitationResult sent={sent} onClose={() => setSent(null)} />
       <ConfirmDialog
         open={pending !== null}
         title={
@@ -317,5 +347,91 @@ export function TeamPage() {
         onCancel={() => setPending(null)}
       />
     </div>
+  );
+}
+
+function EmailStatus({ team, testing, onTest }: { team: TeamView; testing: boolean; onTest: () => void }) {
+  const { mode, sender } = team.email;
+  if (mode === 'log') {
+    return (
+      <div className="flex gap-3 rounded-2xl border border-warn/30 bg-warn/10 px-4 py-3 text-sm text-warn">
+        <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+        <p>
+          Email sending isn't set up on this server, so nothing is emailed. Invitations still work: copy the link shown
+          after inviting and send it yourself. To send real emails, set BREVO_API_KEY and MAIL_FROM (see the deployment
+          guide).
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-surface/80 px-4 py-3 text-sm">
+      <Mail className="size-4 text-accent" aria-hidden />
+      <span className="flex-1 text-muted">
+        Emails are sent from <span className="text-fg">{sender ?? 'the configured sender'}</span> via{' '}
+        {mode === 'brevo' ? 'Brevo' : 'SMTP'}.
+      </span>
+      <Button size="sm" variant="ghost" loading={testing} onClick={onTest}>
+        Send test email
+      </Button>
+    </div>
+  );
+}
+
+function InvitationResult({
+  sent,
+  onClose,
+}: {
+  sent: (InvitationSent & { email: string }) | null;
+  onClose: () => void;
+}) {
+  const copy = async () => {
+    if (!sent) return;
+    try {
+      await navigator.clipboard.writeText(sent.inviteUrl);
+      toast.success('Invitation link copied');
+    } catch {
+      toast.error('Copy failed. Select the link and copy it manually.');
+    }
+  };
+
+  return (
+    <Dialog
+      open={sent !== null}
+      onClose={onClose}
+      title={sent?.emailSent ? 'Invitation sent' : 'Invitation created'}
+      description={sent ? `For ${sent.email}` : undefined}
+    >
+      {sent && (
+        <div className="space-y-4">
+          {sent.emailSent ? (
+            <p className="flex gap-2 text-sm text-good">
+              <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden />
+              We emailed the invitation. If it doesn't arrive within a few minutes, ask them to check spam, or send them
+              the link below.
+            </p>
+          ) : (
+            <p className="flex gap-2 text-sm text-warn">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+              {sent.emailError ?? 'Email is not set up, so nothing was emailed.'} Send them this link (for example on
+              WhatsApp or Messenger).
+            </p>
+          )}
+          <code className="block break-all rounded-lg bg-surface-2 px-3 py-2 text-xs text-muted">{sent.inviteUrl}</code>
+          <p className="text-xs text-faint">
+            The link works once, only for {sent.email}, and expires in 7 days. Anyone with the link can create this
+            account, so share it only with that person.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={onClose}>
+              Done
+            </Button>
+            <Button variant="primary" onClick={copy}>
+              <Copy className="size-4" aria-hidden /> Copy link
+            </Button>
+          </div>
+        </div>
+      )}
+    </Dialog>
   );
 }
