@@ -1,6 +1,6 @@
 {
   "name": "@bitquiz/server",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -20,7 +20,7 @@
     "schema": "prisma/schema.prisma"
   },
   "dependencies": {
-    "@bitquiz/shared": "1.0.0",
+    "@bitquiz/shared": "1.2.0",
     "@prisma/client": "^6.19.0",
     "bcryptjs": "^3.0.2",
     "cookie": "^1.0.2",

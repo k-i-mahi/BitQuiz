@@ -2,15 +2,16 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.2.0] - 2026-10-06
+
+### Added
+
+- **Images and videos in questions.** Link media from YouTube (privacy-enhanced player), Google Drive or any https URL, or use files stored on the projector computer, which the projector loads once and keeps across refreshes (works offline). Videos play on the projector only and start when the question is shown; the console has play, pause and restart, and the answer timer still starts when answering opens. Linked images can also be shown on phones; otherwise phones say "Watch the screen". Media works in the editor (with preview), CSV import (`media_type`, `media`, `media_on_phones`) and duplication. Guide: docs/MEDIA.md.
+- `npm run admin:set-password -w server -- <email>` to reset an organizer's password directly in the database when email isn't available.
 
 ### Changed
 
 - Email is optional: without a configured email service, the verify-email banner is hidden and "Forgot password" explains that reset links can't be sent.
-
-### Added
-
-- `npm run admin:set-password -w server -- <email>` to reset an organizer's password directly in the database when email isn't available.
 
 ## [1.1.0] - 2026-10-06
 

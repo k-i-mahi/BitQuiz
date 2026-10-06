@@ -50,6 +50,21 @@ Built for IEEE CS KUET quiz events of 100–300 participants in one hall. Tested
 | **Projector: code question**                                    | **Projector: live leaderboard**                                      |
 | ![Projector code question](docs/screenshots/projector-code.png) | ![Projector leaderboard](docs/screenshots/projector-leaderboard.png) |
 
+**Images and videos** ([guide](docs/MEDIA.md))
+
+| Projector: video question                                     | Projector: image question                                |
+| ------------------------------------------------------------- | -------------------------------------------------------- |
+| ![Projector video](docs/screenshots/projector-video.png)      | ![Projector image](docs/screenshots/projector-media.png) |
+| **Console: video controls**                                   | **Editor: media with preview**                           |
+| ![Console video controls](docs/screenshots/console-video.png) | ![Editor media](docs/screenshots/editor-media.png)       |
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/phone-watch-screen.png" alt="Phone during a video question"><br><sub><b>Video question:</b> phones say "Watch the screen"</sub></td>
+    <td width="50%"><img src="docs/screenshots/phone-media.png" alt="Image shown on the phone"><br><sub><b>Image question:</b> optionally shown on phones too</sub></td>
+  </tr>
+</table>
+
 | Console lobby (join QR code)                         | Final podium                                          |
 | ---------------------------------------------------- | ----------------------------------------------------- |
 | ![Console lobby](docs/screenshots/console-lobby.png) | ![Final podium](docs/screenshots/projector-final.png) |
@@ -78,6 +93,7 @@ Built for IEEE CS KUET quiz events of 100–300 participants in one hall. Tested
 **Organizers**
 
 - **Text and code questions** with 2–6 options (True/False included), syntax highlighting, explanations, and per-question time and points.
+- **Images and videos** from YouTube, Google Drive or any https link, or from files on the projector computer (works offline). Videos play on the projector only, start when the question is shown and are controlled from the console (play, pause, restart); the answer timer starts when you open answering. See [docs/MEDIA.md](docs/MEDIA.md).
 - **CSV import** with a row-by-row preview of problems (Excel/Google Sheets friendly), plus **results** and **all-answers** CSV exports.
 - **Projector optional.** Projector controls appear only when a projector screen is connected. Without one, the console shows the join QR code and link.
 - **Invite-only organizer accounts.** Owners invite organizers, who set their own password from a single-use link. The link can be shared directly (e.g. WhatsApp), so no email service is required. With email configured, invitations, verification and "forgot password" links are also emailed.
@@ -213,13 +229,13 @@ It asks for the new password, signs out existing sessions and reactivates the ac
 - **One server instance.** Live connections and timers are kept in one process; horizontal scaling would need a shared adapter (e.g. Redis).
 - **Free hosting sleeps.** Render's free service sleeps after 15 minutes without visitors and takes about a minute to wake. Open the console a few minutes before an event.
 - **Shared phones.** BitQuiz stops two devices from using the same roll, but it can't stop two people answering on one phone; supervise the hall.
-- **Text and code only.** No images, audio or video in questions.
+- **No media uploads.** Images and videos are linked (YouTube, Drive, https) or loaded on the projector computer; BitQuiz doesn't store media files, which keeps it free to host. No audio-only questions.
 
 ## Future work
 
 - **More organizers per club.** Invitations already work through a shareable link; turning on an email service (e.g. Brevo, free) adds emailed invitations, verification and self-service password resets.
 - **Several organizations** on one server, each with its own team and competitions.
-- **Images in questions**, per-question analytics, and team mode (one phone per team).
+- **Uploading media from the editor** (e.g. Cloudinary free plan), per-question analytics, and team mode (one phone per team).
 
 ## Contributing
 
