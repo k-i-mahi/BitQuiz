@@ -7,6 +7,7 @@ import type {
   QuizOption,
   ViewerRole,
 } from '@bitquiz/shared';
+import { detailsVisible } from '@bitquiz/shared';
 
 export interface QuestionRecord {
   id: string;
@@ -107,16 +108,18 @@ export function toQuestionView(
   distribution: Partial<Record<OptionId, number>>,
 ): QuestionView {
   const rule = questionRule(question, round);
+  const withheld = role !== 'gm' && !detailsVisible(question.status);
   const view: QuestionView = {
     id: question.id,
     roundTitle: round.title,
     roundOrder: round.order,
     number: position.number,
     total: position.total,
-    prompt: question.prompt,
-    code: question.code,
-    codeLanguage: question.codeLanguage,
-    options: question.options as QuizOption[],
+    // During the media stage, only the organizer gets the question; screens and phones get the media alone.
+    prompt: withheld ? '' : question.prompt,
+    code: withheld ? null : question.code,
+    codeLanguage: withheld ? null : question.codeLanguage,
+    options: withheld ? [] : (question.options as QuizOption[]),
     status: question.status,
     timeLimitSec: rule.timeLimitSec,
     maxPoints: rule.maxPoints,

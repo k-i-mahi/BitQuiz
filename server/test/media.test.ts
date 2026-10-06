@@ -16,6 +16,8 @@ describe.skipIf(!hasDatabase)('question media (integration)', () => {
   const suffix = Math.random().toString(36).slice(2, 8);
 
   const detail = async () => (await owner.get(`/api/competitions/${competitionId}`)).body;
+  const questionStatus = async (order: number) =>
+    (await detail()).rounds[0].questions.find((q: { order: number }) => q.order === order).status;
   const command = async (body: Record<string, unknown>) => {
     const { revision } = await detail();
     return owner
@@ -93,6 +95,8 @@ describe.skipIf(!hasDatabase)('question media (integration)', () => {
     await command({ type: 'START' });
     expect((await command({ type: 'SHOW_QUESTION' })).status).toBe(200);
     expect(await detail()).toMatchObject({ mediaPlaying: true, mediaRestartCount: 1 });
+    // A question with media is shown media-first: text and options wait for the organizer.
+    expect(await questionStatus(1)).toBe('MEDIA');
 
     expect((await command({ type: 'MEDIA_PAUSE' })).status).toBe(200);
     expect((await detail()).mediaPlaying).toBe(false);
@@ -106,11 +110,23 @@ describe.skipIf(!hasDatabase)('question media (integration)', () => {
     expect(await detail()).toMatchObject({ mediaPlaying: true, mediaRestartCount: 2 });
   });
 
-  it('refuses video commands for a question without video', async () => {
-    await command({ type: 'OPEN_QUESTION' });
+  it('shows the question and options on the second step, and opening answering keeps the video going', async () => {
+    expect((await command({ type: 'SHOW_QUESTION' })).status).toBe(200);
+    expect(await questionStatus(1)).toBe('SHOWN');
+    expect((await command({ type: 'OPEN_QUESTION' })).status).toBe(200);
+    expect(await questionStatus(1)).toBe('OPEN');
+    // Same restart count as before: opening didn't jump the video back to the start.
+    expect(await detail()).toMatchObject({ mediaPlaying: true, mediaRestartCount: 2 });
     await command({ type: 'CLOSE_QUESTION' });
     await command({ type: 'REVEAL' });
-    await command({ type: 'SHOW_QUESTION' });
+  });
+
+  it('shows questions without media directly', async () => {
+    expect((await command({ type: 'SHOW_QUESTION' })).status).toBe(200);
+    expect(await questionStatus(2)).toBe('SHOWN');
+  });
+
+  it('refuses video commands for a question without video', async () => {
     const res = await command({ type: 'MEDIA_PLAY' });
     expect(res.status).toBe(409);
     expect(res.body.error.message).toMatch(/no video/);

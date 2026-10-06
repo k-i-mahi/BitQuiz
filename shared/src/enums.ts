@@ -1,11 +1,15 @@
 export const COMPETITION_STATUSES = ['DRAFT', 'LOBBY', 'LIVE', 'FINISHED', 'ARCHIVED'] as const;
 export type CompetitionStatus = (typeof COMPETITION_STATUSES)[number];
 
-export const QUESTION_STATUSES = ['PENDING', 'SHOWN', 'OPEN', 'CLOSED', 'REVEALED', 'VOID'] as const;
+/**
+ * MEDIA: a question with an image or video is on screen with its media only; the question text
+ * and options are withheld from phones and the projector until the organizer shows them (SHOWN).
+ */
+export const QUESTION_STATUSES = ['PENDING', 'MEDIA', 'SHOWN', 'OPEN', 'CLOSED', 'REVEALED', 'VOID'] as const;
 export type QuestionStatus = (typeof QUESTION_STATUSES)[number];
 
 /** Question states in which a question occupies the stage; at most one per competition. */
-export const ACTIVE_QUESTION_STATUSES: readonly QuestionStatus[] = ['SHOWN', 'OPEN', 'CLOSED'];
+export const ACTIVE_QUESTION_STATUSES: readonly QuestionStatus[] = ['MEDIA', 'SHOWN', 'OPEN', 'CLOSED'];
 
 export const DISPLAY_MODES = ['LOBBY', 'QUESTION', 'LEADERBOARD', 'HOLD', 'FINAL'] as const;
 export type DisplayMode = (typeof DISPLAY_MODES)[number];

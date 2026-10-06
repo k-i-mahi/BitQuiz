@@ -11,7 +11,8 @@ export const COMPETITION_TRANSITIONS: Record<CompetitionStatus, readonly Competi
 
 /** Allowed question status changes (OPEN → OPEN is "extend time"). */
 export const QUESTION_TRANSITIONS: Record<QuestionStatus, readonly QuestionStatus[]> = {
-  PENDING: ['SHOWN', 'OPEN'],
+  PENDING: ['MEDIA', 'SHOWN', 'OPEN'],
+  MEDIA: ['SHOWN', 'OPEN', 'VOID'],
   SHOWN: ['OPEN', 'VOID'],
   OPEN: ['OPEN', 'CLOSED', 'VOID'],
   CLOSED: ['REVEALED', 'VOID'],
@@ -25,6 +26,16 @@ export function canMoveCompetition(from: CompetitionStatus, to: CompetitionStatu
 
 export function canMoveQuestion(from: QuestionStatus, to: QuestionStatus): boolean {
   return QUESTION_TRANSITIONS[from].includes(to);
+}
+
+/** The first stage of a question when it is shown: media-only for questions with an image or video. */
+export function firstShownStatus(hasMedia: boolean): QuestionStatus {
+  return hasMedia ? 'MEDIA' : 'SHOWN';
+}
+
+/** Whether a viewer in this stage may see the question text and options (the organizer always can). */
+export function detailsVisible(status: QuestionStatus): boolean {
+  return status !== 'MEDIA';
 }
 
 /** Questions whose answer key may be corrected. */
@@ -41,11 +52,14 @@ export function isJoinable(status: CompetitionStatus, allowLateJoin: boolean): b
   return status === 'LOBBY' || (status === 'LIVE' && allowLateJoin);
 }
 
-export type NextStep = 'SHOW' | 'OPEN' | 'CLOSE' | 'REVEAL' | 'NEXT' | 'FINISH' | null;
+/** DETAILS: the media is on screen; next, show the question text and options. */
+export type NextStep = 'SHOW' | 'DETAILS' | 'OPEN' | 'CLOSE' | 'REVEAL' | 'NEXT' | 'FINISH' | null;
 
 /** What the Game Master's main button should do next, given the current question. */
 export function nextStep(currentStatus: QuestionStatus | null, hasPendingQuestions: boolean): NextStep {
   switch (currentStatus) {
+    case 'MEDIA':
+      return 'DETAILS';
     case 'SHOWN':
       return 'OPEN';
     case 'OPEN':

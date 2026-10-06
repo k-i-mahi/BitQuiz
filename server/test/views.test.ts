@@ -103,3 +103,37 @@ describe('mediaFor', () => {
     expect(mediaFor('screen', question('SHOWN'))).toBeNull();
   });
 });
+
+describe('media stage', () => {
+  const staged: QuestionRecord = {
+    ...question('MEDIA'),
+    code: 'int x;',
+    codeLanguage: 'c',
+    mediaKind: 'VIDEO',
+    mediaSource: 'LINK',
+    mediaRef: 'https://youtu.be/6GoRsZayogE',
+  };
+  const stagedView = (role: 'gm' | 'screen' | 'participant') =>
+    toQuestionView(role, staged, round, { number: 1, total: 1 }, {});
+
+  it('withholds the question text, code and options from the projector and phones', () => {
+    for (const role of ['screen', 'participant'] as const) {
+      const v = stagedView(role);
+      expect(v).toMatchObject({ prompt: '', code: null, options: [] });
+      expect(JSON.stringify(v)).not.toContain('Which?');
+    }
+  });
+
+  it('still gives the projector the media, and the organizer everything', () => {
+    expect(stagedView('screen').media?.kind).toBe('VIDEO');
+    expect(stagedView('participant').watchScreen).toBe(true);
+    expect(stagedView('gm')).toMatchObject({ prompt: 'Which?', code: 'int x;' });
+    expect(stagedView('gm').options).toHaveLength(2);
+  });
+
+  it('shows everything once the question is shown', () => {
+    const shown = toQuestionView('participant', { ...staged, status: 'SHOWN' }, round, { number: 1, total: 1 }, {});
+    expect(shown.prompt).toBe('Which?');
+    expect(shown.options).toHaveLength(2);
+  });
+});

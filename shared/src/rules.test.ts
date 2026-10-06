@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { canMoveCompetition, canMoveQuestion, checkAcceptance, nextStep, type AcceptanceInput } from './rules';
+import {
+  canMoveCompetition,
+  canMoveQuestion,
+  checkAcceptance,
+  detailsVisible,
+  firstShownStatus,
+  nextStep,
+  type AcceptanceInput,
+} from './rules';
 
 describe('competition transitions', () => {
   it('allows the normal lifecycle', () => {
@@ -39,6 +47,46 @@ describe('question transitions', () => {
     expect(canMoveQuestion('REVEALED', 'CLOSED')).toBe(false);
     expect(canMoveQuestion('VOID', 'OPEN')).toBe(false);
     expect(canMoveQuestion('PENDING', 'REVEALED')).toBe(false);
+  });
+});
+
+describe('media stage', () => {
+  it('shows media questions media-first, others straight to the question', () => {
+    expect(firstShownStatus(true)).toBe('MEDIA');
+    expect(firstShownStatus(false)).toBe('SHOWN');
+  });
+
+  it('goes from media to the question, or straight to answering, or void', () => {
+    expect(canMoveQuestion('PENDING', 'MEDIA')).toBe(true);
+    expect(canMoveQuestion('MEDIA', 'SHOWN')).toBe(true);
+    expect(canMoveQuestion('MEDIA', 'OPEN')).toBe(true);
+    expect(canMoveQuestion('MEDIA', 'VOID')).toBe(true);
+    expect(canMoveQuestion('SHOWN', 'MEDIA')).toBe(false);
+    expect(canMoveQuestion('MEDIA', 'CLOSED')).toBe(false);
+  });
+
+  it('hides the question text and options only during the media stage', () => {
+    expect(detailsVisible('MEDIA')).toBe(false);
+    for (const s of ['SHOWN', 'OPEN', 'CLOSED', 'REVEALED'] as const) expect(detailsVisible(s)).toBe(true);
+  });
+
+  it('suggests showing the question details next', () => {
+    expect(nextStep('MEDIA', true)).toBe('DETAILS');
+  });
+
+  it('never accepts answers during the media stage', () => {
+    expect(
+      checkAcceptance({
+        receivedAt: 1,
+        competitionStatus: 'LIVE',
+        currentQuestionId: 'q',
+        questionId: 'q',
+        questionStatus: 'MEDIA',
+        endsAt: null,
+        closedAt: null,
+        graceMs: 1000,
+      }),
+    ).toEqual({ ok: false, reason: 'NOT_ACCEPTING' });
   });
 });
 

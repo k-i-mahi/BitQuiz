@@ -5,6 +5,7 @@ import {
   canMoveCompetition,
   canMoveQuestion,
   canRegrade,
+  firstShownStatus,
   computePoints,
   questionSchema,
   type Command,
@@ -141,33 +142,48 @@ async function apply(tx: Tx, c: Competition, command: Command, now: Date, actor:
 
     case 'SHOW_QUESTION': {
       requireStatus(c, 'LIVE');
+      const current = await currentQuestion(tx, c);
+      // Second step of a media question: the media has been shown, now show the question and options.
+      if (current?.status === 'MEDIA' && (!command.questionId || command.questionId === current.id)) {
+        await moveQuestion(tx, current, 'SHOWN', {});
+        return { log: { questionId: current.id, stage: 'details' } };
+      }
       await requireNoActiveQuestion(tx, c);
       const target = await pickQuestion(tx, c, command.questionId);
-      await moveQuestion(tx, target, 'SHOWN', { shownAt: now });
+      // Questions with an image or video start with the media alone; others show everything at once.
+      const stage = firstShownStatus(Boolean(target.mediaRef));
+      await moveQuestion(tx, target, stage, { shownAt: now });
       await tx.competition.update({
         where: { id: c.id },
         data: { currentQuestionId: target.id, displayMode: 'QUESTION', ...startMedia },
       });
-      return { log: { questionId: target.id } };
+      return { log: { questionId: target.id, stage: stage === 'MEDIA' ? 'media' : 'details' } };
     }
 
     case 'OPEN_QUESTION': {
       requireStatus(c, 'LIVE');
       const current = await currentQuestion(tx, c);
       let target: QuestionWithRound;
-      if (current && current.status === 'SHOWN' && (!command.questionId || command.questionId === current.id)) {
+      let newlyShown = false;
+      if (
+        current &&
+        (current.status === 'SHOWN' || current.status === 'MEDIA') &&
+        (!command.questionId || command.questionId === current.id)
+      ) {
         target = current;
       } else {
         // "Show + Open" in one step.
         await requireNoActiveQuestion(tx, c);
         target = await pickQuestion(tx, c, command.questionId);
+        newlyShown = true;
       }
       const { timeLimitSec } = questionRule(target, target.round);
       const endsAt = new Date(now.getTime() + timeLimitSec * 1000);
       await moveQuestion(tx, target, 'OPEN', { shownAt: target.shownAt ?? now, openedAt: now, endsAt });
       await tx.competition.update({
         where: { id: c.id },
-        data: { currentQuestionId: target.id, displayMode: 'QUESTION', ...startMedia },
+        // Opening answering leaves a playing video alone; only a newly shown question starts its media.
+        data: { currentQuestionId: target.id, displayMode: 'QUESTION', ...(newlyShown ? startMedia : {}) },
       });
       return { schedule: { questionId: target.id, endsAt }, log: { questionId: target.id, timeLimitSec } };
     }

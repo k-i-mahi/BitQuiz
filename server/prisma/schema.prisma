@@ -34,8 +34,10 @@ enum CompetitionStatus {
   ARCHIVED
 }
 
+/// MEDIA: only the question's image or video is on screen; text and options are not shown yet.
 enum QuestionStatus {
   PENDING
+  MEDIA
   SHOWN
   OPEN
   CLOSED
