@@ -1,0 +1,40 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: dropdown
+    id: screen
+    attributes:
+      label: Which screen?
+      options:
+        - Participant phone
+        - Game Master console
+        - Projector screen
+        - Admin (competitions, editor, results)
+        - Team & access / login / emails
+        - Server / deployment
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the console
+        2. Click …
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The `commit` shown at /healthz on your server
+  - type: textarea
+    id: extra
+    attributes:
+      label: Browser, device, screenshots or logs

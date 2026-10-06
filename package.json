@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Real-time quiz competition platform: Game Master console, projector screen and participant phones kept in sync live.",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "author": "mahi <mahi.jess9t9@gmail.com>",
   "repository": {
     "type": "git",
@@ -48,5 +48,20 @@
   "overrides": {
     "deepmerge-ts": "^8.0.2"
   },
-  "type": "module"
+  "type": "module",
+  "homepage": "https://bitquiz.onrender.com",
+  "bugs": {
+    "url": "https://github.com/k-i-mahi/BitQuiz/issues"
+  },
+  "keywords": [
+    "quiz",
+    "real-time",
+    "socket.io",
+    "competition",
+    "kahoot-alternative",
+    "react",
+    "express",
+    "prisma",
+    "postgresql"
+  ]
 }
