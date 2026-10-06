@@ -5,7 +5,8 @@ import { cn } from '@/lib/utils';
 
 export function StatsPanel({ state }: { state: GmState }) {
   const { stats } = state;
-  const answeringBase = Math.max(stats.connected, stats.answered, 1);
+  // Compare against everyone who joined: a phone may answer and then briefly lose its connection.
+  const answeringBase = Math.max(stats.joined, stats.answered, 1);
   const showAnswers = state.question && state.question.status !== 'SHOWN';
 
   return (
@@ -15,7 +16,7 @@ export function StatsPanel({ state }: { state: GmState }) {
         <dl className="grid grid-cols-2 gap-2">
           <Stat label="Joined" value={stats.joined} />
           <Stat label="Connected" value={stats.connected} tone={stats.connected < stats.joined ? 'warn' : undefined} />
-          <Stat label="Answered" value={showAnswers ? `${stats.answered}/${stats.connected}` : '—'} />
+          <Stat label="Answered" value={showAnswers ? `${stats.answered}/${stats.joined}` : '—'} />
           <Stat label="Correct" value={showAnswers ? stats.correct : '—'} tone="good" />
         </dl>
         {showAnswers && (

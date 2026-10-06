@@ -32,16 +32,18 @@ export function AdminLayout() {
   return (
     <div className="min-h-dvh">
       <header className="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-5">
+        <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:gap-4 sm:px-5">
           <Logo size="sm" />
-          <span className="hidden text-sm text-faint sm:inline">{admin.organizationName}</span>
+          <span className="hidden text-sm text-faint md:inline">{admin.organizationName}</span>
           <nav className="ml-auto flex items-center gap-1">
-            <NavLink to="/admin" end className={link}>
-              <Trophy className="size-4" aria-hidden /> Competitions
+            <NavLink to="/admin" end className={link} aria-label="Competitions">
+              <Trophy className="size-4" aria-hidden />
+              <span className="hidden sm:inline">Competitions</span>
             </NavLink>
             {admin.role === 'OWNER' && (
-              <NavLink to="/admin/team" className={link}>
-                <ShieldCheck className="size-4" aria-hidden /> Team & access
+              <NavLink to="/admin/team" className={link} aria-label="Team & access">
+                <ShieldCheck className="size-4" aria-hidden />
+                <span className="hidden sm:inline">Team & access</span>
               </NavLink>
             )}
             <Button variant="ghost" size="sm" onClick={() => setAccountOpen(true)} title={admin.email}>

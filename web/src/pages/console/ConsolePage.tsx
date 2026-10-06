@@ -209,9 +209,12 @@ export function ConsolePage() {
       </header>
 
       <div className="grid flex-1 gap-4 p-4 xl:grid-cols-[280px_minmax(0,1fr)_340px]">
-        <RunSheet state={state} send={send} busy={busy} />
+        {/* On phones the controls come first; on wide screens the run sheet sits on the left. */}
+        <div className="order-3 xl:order-none">
+          <RunSheet state={state} send={send} busy={busy} />
+        </div>
 
-        <div className="flex min-w-0 flex-col gap-4">
+        <div className="order-1 flex min-w-0 flex-col gap-4 xl:order-none">
           {competition.status === 'DRAFT' && (
             <PhaseCard
               title="Ready to open the lobby?"
@@ -364,7 +367,9 @@ export function ConsolePage() {
           )}
         </div>
 
-        <StatsPanel state={state} />
+        <div className="order-2 xl:order-none">
+          <StatsPanel state={state} />
+        </div>
       </div>
 
       <footer className="flex flex-wrap items-center gap-4 border-t border-line px-5 py-2 text-xs text-faint">
