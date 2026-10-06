@@ -48,28 +48,31 @@ Why two: the app talks to the database through Neon's pooler, which keeps workin
 
 Every push to `main` redeploys automatically.
 
-## 3. Turn on email (Gmail, free)
+## 3. Turn on email (Brevo, free)
 
-Invitations, password resets and email verification are sent by email. Gmail works without your own domain (about 500 emails a day).
+Invitations, password resets and email verification are sent by email. **Render's free plan blocks the SMTP ports (25, 465, 587)**, so Gmail SMTP cannot work there. BitQuiz sends through **Brevo's HTTPS API** instead: free for 300 emails a day, no domain needed.
 
-1. Sign in to the Gmail account that should send the emails.
-2. Turn on **2-Step Verification**: Google Account → Security.
-3. Create an **App password**: Google Account → Security → App passwords (or search "App passwords"). Name it `BitQuiz`. Copy the 16-character password and remove the spaces.
-4. In Render → bitquiz → **Environment**, set:
+1. Create a free account at [brevo.com](https://www.brevo.com).
+2. Add your sender: **Senders, Domains & Dedicated IPs → Senders → Add a sender**. Use the address emails should come from (your Gmail works). Brevo emails you a confirmation link; open it.
+3. Create an API key: **SMTP & API → API Keys → Generate a new API key**, name it `BitQuiz`, and copy it (it starts with `xkeysib-`).
+4. In Render → **bitquiz** → **Environment**, set:
 
    | Key | Value |
    | --- | --- |
-   | `SMTP_HOST` | `smtp.gmail.com` (already set by the Blueprint) |
-   | `SMTP_PORT` | `465` (already set by the Blueprint) |
-   | `SMTP_USER` | The Gmail address |
-   | `SMTP_PASS` | The 16-character app password |
-   | `MAIL_FROM` | Optional, e.g. `BitQuiz <you@gmail.com>` |
+   | `BREVO_API_KEY` | The key from step 3 |
+   | `MAIL_FROM` | `BitQuiz <the sender address from step 2>` |
 
-5. Save. Render restarts the app. In **Team & access**, the yellow "email isn't configured" notice disappears.
+   If you added `SMTP_*` variables earlier, delete them; they can't work on Render's free plan.
 
-Then use **Send verification email** in the yellow bar at the top of the dashboard, and invite other organizers from **Team & access**.
+5. Save. After Render restarts, open **Team & access** and press **Send test email**.
 
-Without these settings the app still works, but emails are only written to the Render log.
+If the test email lands in spam, mark it "Not spam" once. Because a Gmail address is sent through Brevo, some providers may be cautious; using your own domain in Brevo gives the best delivery.
+
+**Email isn't required to invite people.** When you invite someone, BitQuiz always shows the invitation link with a **Copy** button, so you can send it on WhatsApp or Messenger if the email doesn't arrive.
+
+### Running somewhere else (VPS or venue laptop)
+
+Servers that allow SMTP can use any mail server instead of Brevo, for example Gmail with an [app password](https://support.google.com/accounts/answer/185833): `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`, `SMTP_USER=you@gmail.com`, `SMTP_PASS=<16-character app password>`. If `BREVO_API_KEY` is set, Brevo is used.
 
 ## 4. How the free plan behaves
 
@@ -104,6 +107,8 @@ Render → service → **Settings → Custom Domains**. Add the domain, create t
 | `prepared statement … already exists` errors | `&pgbouncer=true` is missing from `DATABASE_URL` |
 | Can't log in after deploy | Check the deploy log for `Created owner …`. The owner is only created if no account with that email exists |
 | QR code points to the wrong address | Set `PUBLIC_URL` and redeploy |
-| Invitation emails fail with "Check the email settings" | Check `SMTP_USER` / `SMTP_PASS`; the app password must be from the same Gmail account, without spaces |
-| Emails land in spam | Ask recipients to mark the first one as "Not spam"; for better delivery use your own domain with a service like Brevo |
+| "Send test email" fails with "Could not reach the SMTP server" | Render free blocks SMTP. Use Brevo (`BREVO_API_KEY`, `MAIL_FROM`) |
+| Brevo rejects the email (401) | The API key is wrong or was deleted; create a new one |
+| Brevo rejects the email (400, sender) | `MAIL_FROM` must be a sender you confirmed in Brevo |
+| Emails land in spam | Mark the first one as "Not spam"; for the best delivery, authenticate your own domain in Brevo |
 | First page load takes a minute | The free app was asleep. Open it a few minutes before you need it |

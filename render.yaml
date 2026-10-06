@@ -26,13 +26,11 @@ services:
         sync: false
       - key: SEED_ORG_NAME
         value: IEEE CS KUET
-      # Gmail SMTP for invitations, password resets and verification (see docs/DEPLOY_RENDER.md)
-      - key: SMTP_HOST
-        value: smtp.gmail.com
-      - key: SMTP_PORT
-        value: '465'
-      - key: SMTP_USER
+      # Email over Brevo's HTTPS API. Render's free plan blocks SMTP ports, so Gmail SMTP can't work here.
+      # See docs/DEPLOY_RENDER.md, "Turn on email".
+      - key: BREVO_API_KEY
         sync: false
-      - key: SMTP_PASS
+      # A sender verified in Brevo, e.g. "BitQuiz <you@gmail.com>"
+      - key: MAIL_FROM
         sync: false
       # PUBLIC_URL defaults to the service's onrender.com address; set it only for a custom domain.

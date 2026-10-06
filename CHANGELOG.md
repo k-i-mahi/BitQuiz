@@ -2,10 +2,21 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.1.0] - 2026-10-06
+
+### Fixed
+
+- Emails (invitations, verification, password resets) now work on Render's free plan, which blocks SMTP ports: email is sent through Brevo's HTTPS API, with SMTP kept for self-hosting.
+- An invitation is no longer lost when email fails: the owner always gets a shareable invitation link.
+- The console counted answers against connected phones instead of joined participants.
+- The admin header no longer overflows on phones; the console shows its controls first on small screens.
 
 ### Added
 
+- "Send test email" and email delivery status in Team & access.
+- Logging of failed and slow API requests, a friendly error page with reload after deploys, link-preview tags and image, and `robots.txt`.
+- Archived competitions can be permanently deleted (removing their participants and answers).
+- MIT license, contributing guide, issue templates and README screenshots.
 - Organizer accounts with real email: invite-only sign-up (owners invite by email, invitees set their own password), email verification, and "forgot password" reset links. Emails are sent through any SMTP server (Gmail app password supported) and logged when email is not configured.
 - Team & access page for owners: change roles, suspend or reactivate, sign out everywhere, remove members, and resend or revoke invitations. At least one active owner is always kept.
 - Per-email login throttle in addition to the per-IP limit.
