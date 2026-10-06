@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { CopyPlus, MoreHorizontal, Play, RotateCcw } from 'lucide-react';
-import { OPTION_IDS, type GmState, type OptionId, type QuestionStatus, type RunSheetQuestion } from '@bitquiz/shared';
+import {
+  ACTIVE_QUESTION_STATUSES,
+  OPTION_IDS,
+  type GmState,
+  type OptionId,
+  type QuestionStatus,
+  type RunSheetQuestion,
+} from '@bitquiz/shared';
 import type { SendCommand } from './ConsolePage';
 import { OptionLetter } from '@/components/quiz';
 import { Button } from '@/components/ui/button';
@@ -10,6 +17,7 @@ import { cn } from '@/lib/utils';
 
 const STATUS_DOT: Record<QuestionStatus, string> = {
   PENDING: 'border-line-strong',
+  MEDIA: 'border-accent bg-accent/15',
   SHOWN: 'border-accent bg-accent/30',
   OPEN: 'border-good bg-good animate-pulse',
   CLOSED: 'border-warn bg-warn/50',
@@ -27,7 +35,7 @@ export function RunSheet({ state, send, busy }: Props) {
   const [menu, setMenu] = useState<RunSheetQuestion | null>(null);
   const live = state.competition.status === 'LIVE';
   const finished = state.competition.status === 'FINISHED';
-  const active = state.question && ['SHOWN', 'OPEN', 'CLOSED'].includes(state.question.status);
+  const active = state.question && ACTIVE_QUESTION_STATUSES.includes(state.question.status);
 
   return (
     <Card className="flex max-h-[calc(100dvh-8rem)] flex-col overflow-hidden xl:sticky xl:top-4">

@@ -102,7 +102,8 @@ export function ConsolePage() {
     if (action === 'OPEN') void send({ type: 'OPEN_QUESTION' });
     else if (action === 'CLOSE') void send({ type: 'CLOSE_QUESTION' });
     else if (action === 'REVEAL') void send({ type: 'REVEAL' });
-    else if (action === 'SHOW' || action === 'NEXT') void send({ type: 'SHOW_QUESTION' });
+    // DETAILS: the media is on screen; showing again reveals the question text and options.
+    else if (action === 'SHOW' || action === 'NEXT' || action === 'DETAILS') void send({ type: 'SHOW_QUESTION' });
     else if (action === 'FINISH') setConfirmFinish(true);
   }, [send]);
 

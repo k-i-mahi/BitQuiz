@@ -176,6 +176,25 @@ function QuestionScreen({
     setSubmission({ questionId: question.id, optionId, status: 'failed', message: 'Network problem. Tap Lock again.' });
   };
 
+  // Media stage: the projector shows the image or video alone; the question and options follow.
+  if (question.status === 'MEDIA') {
+    return (
+      <div className="flex flex-1 flex-col gap-4">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted">
+          {question.roundTitle} · Q{question.number}/{question.total}
+        </p>
+        {question.media && (
+          <MediaView key={question.id} media={question.media} className="h-56 w-full rounded-2xl border border-line" />
+        )}
+        <Centered>
+          <MonitorPlay className="size-12 text-accent" aria-hidden />
+          <h1 className="text-2xl font-bold">Watch the screen</h1>
+          <p className="text-muted">The question and options will appear here next.</p>
+        </Centered>
+      </div>
+    );
+  }
+
   const optionState = (id: OptionId): OptionState => {
     if (question.status === 'REVEALED') {
       if (id === question.correctOptionId) return 'correct';

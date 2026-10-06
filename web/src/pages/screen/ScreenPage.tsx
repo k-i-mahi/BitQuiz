@@ -214,6 +214,9 @@ function Question({
   const many = question.options.length > 4;
   // Media or code takes the left column; options then stack on the right.
   const side = Boolean(question.code || question.media);
+  // Media stage: only the image or video, large. The same MediaView stays mounted when the question
+  // and options appear, so a playing video is never reloaded.
+  const staged = question.status === 'MEDIA';
 
   return (
     <div className="flex flex-1 flex-col gap-[2.5vh]">
@@ -239,18 +242,23 @@ function Question({
         <TimerBar remainingMs={remaining} totalMs={question.timeLimitSec * 1000} className="h-[1vh]" />
       )}
 
-      <h1 className={cn('font-semibold leading-tight', side ? 'text-[2.6vw]' : 'text-[3.4vw]')}>{question.prompt}</h1>
+      {!staged && (
+        <h1 className={cn('font-semibold leading-tight', side ? 'text-[2.6vw]' : 'text-[3.4vw]')}>{question.prompt}</h1>
+      )}
 
-      <div className={cn('grid min-h-0 flex-1 gap-[2vw]', side ? 'grid-cols-[1.25fr_1fr]' : 'grid-cols-1')}>
+      <div className={cn('grid min-h-0 flex-1 gap-[2vw]', side && !staged ? 'grid-cols-[1.25fr_1fr]' : 'grid-cols-1')}>
         {side && (
-          <div className="flex min-h-0 flex-col gap-[2vh]">
+          <div className={cn('flex min-h-0 flex-col gap-[2vh]', staged && 'items-center justify-center')}>
             {question.media && (
               <MediaView
                 key={question.id}
                 media={question.media}
                 playback={playback}
                 localUrls={localUrls}
-                className="aspect-video max-h-[58vh] w-full rounded-[1.2vw] border border-line"
+                className={cn(
+                  'aspect-video rounded-[1.2vw] border border-line',
+                  staged ? 'h-[66vh] max-w-full' : 'max-h-[58vh] w-full',
+                )}
               />
             )}
             {question.code && (
@@ -258,7 +266,7 @@ function Question({
             )}
           </div>
         )}
-        <div className={cn('grid content-start gap-[1.6vh]', !side && 'grid-cols-2')}>
+        <div className={cn('grid content-start gap-[1.6vh]', !side && 'grid-cols-2', staged && 'hidden')}>
           {question.options.map((option) => {
             const isCorrect = revealed && option.id === question.correctOptionId;
             const count = counts[option.id as OptionId] ?? 0;
@@ -298,6 +306,8 @@ function Question({
           })}
         </div>
       </div>
+
+      {staged && <p className="text-center text-[1.6vw] text-muted">Watch carefully. The question comes next.</p>}
 
       {revealed && question.explanation && (
         <motion.p

@@ -1,6 +1,25 @@
 import { useState } from 'react';
-import { Ban, CheckCircle2, Clock, Eye, FastForward, Flag, Pause, Play, Plus, RotateCcw, Square } from 'lucide-react';
-import type { GmState, MediaPlayback, NextStep, QuestionMedia } from '@bitquiz/shared';
+import {
+  Ban,
+  CheckCircle2,
+  Clock,
+  Eye,
+  FastForward,
+  Flag,
+  ListChecks,
+  Pause,
+  Play,
+  Plus,
+  RotateCcw,
+  Square,
+} from 'lucide-react';
+import {
+  ACTIVE_QUESTION_STATUSES,
+  type GmState,
+  type MediaPlayback,
+  type NextStep,
+  type QuestionMedia,
+} from '@bitquiz/shared';
 import type { SendCommand } from './ConsolePage';
 import { CodeBlock, OptionLetter, TimerBar, TimerNumber, useRemaining } from '@/components/quiz';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +41,7 @@ interface Props {
 
 const STEP_LABEL: Record<Exclude<NextStep, null>, { label: string; icon: typeof Play }> = {
   SHOW: { label: 'Show first question', icon: Eye },
+  DETAILS: { label: 'Show question & options', icon: ListChecks },
   OPEN: { label: 'Open answering', icon: Play },
   CLOSE: { label: 'Close answering', icon: Square },
   REVEAL: { label: 'Reveal answer', icon: CheckCircle2 },
@@ -34,7 +54,7 @@ export function CurrentQuestionPanel({ state, clock, busy, send, step, onMainSte
   const remaining = useRemaining(question, clock);
   const [confirmVoid, setConfirmVoid] = useState(false);
   const main = step ? STEP_LABEL[step] : null;
-  const active = question && ['SHOWN', 'OPEN', 'CLOSED'].includes(question.status);
+  const active = question && ACTIVE_QUESTION_STATUSES.includes(question.status);
   const totalAnswers = Object.values(question?.distribution ?? {}).reduce((a, b) => a + (b ?? 0), 0);
 
   return (
@@ -54,10 +74,12 @@ export function CurrentQuestionPanel({ state, clock, busy, send, step, onMainSte
                       ? 'accent'
                       : question.status === 'CLOSED'
                         ? 'warn'
-                        : 'neutral'
+                        : question.status === 'MEDIA'
+                          ? 'accent'
+                          : 'neutral'
                 }
               >
-                {question.status}
+                {question.status === 'MEDIA' ? 'MEDIA ONLY' : question.status}
               </Badge>
               <span className="text-muted">
                 {question.maxPoints}→{question.minPoints} pts · {question.timeLimitSec}s
@@ -156,6 +178,16 @@ export function CurrentQuestionPanel({ state, clock, busy, send, step, onMainSte
               title="Show the next question and start the timer at once"
             >
               <FastForward className="size-4" aria-hidden /> Show + open next
+            </Button>
+          )}
+          {question?.status === 'MEDIA' && (
+            <Button
+              size="lg"
+              disabled={busy}
+              onClick={() => send({ type: 'OPEN_QUESTION' })}
+              title="Show the question and options and start the timer at once"
+            >
+              <FastForward className="size-4" aria-hidden /> Show + open answering
             </Button>
           )}
           {question?.status === 'OPEN' && (

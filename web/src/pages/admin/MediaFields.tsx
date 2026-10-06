@@ -1,5 +1,13 @@
 import { useDeferredValue } from 'react';
-import { mediaProblem, type MediaKind, type MediaSource } from '@bitquiz/shared';
+import { TriangleAlert } from 'lucide-react';
+import {
+  driveFileId,
+  mediaProblem,
+  parseMediaLink,
+  youtubeId,
+  type MediaKind,
+  type MediaSource,
+} from '@bitquiz/shared';
 import { MediaView } from '@/components/MediaView';
 import { FieldError, Input, Label, Select } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -20,6 +28,9 @@ export function MediaFields({ kind, source, mediaRef, onPhones, onKind, onSource
   const deferredRef = useDeferredValue(mediaRef.trim());
   const problem = kind && deferredRef ? mediaProblem({ kind, source, ref: deferredRef }) : null;
   const canShowOnPhones = kind === 'IMAGE' && source === 'LINK';
+  // YouTube and Drive players display the title or file name; warn because it may reveal the answer.
+  const link = kind === 'VIDEO' && source === 'LINK' && !problem ? parseMediaLink(deferredRef) : null;
+  const titleHost = link ? (youtubeId(link) ? 'YouTube' : driveFileId(link) ? 'Google Drive' : null) : null;
 
   return (
     <div className="space-y-3 rounded-xl border border-line p-4">
@@ -102,8 +113,19 @@ export function MediaFields({ kind, source, mediaRef, onPhones, onKind, onSource
           )}
           {kind === 'VIDEO' && (
             <p className="text-xs text-muted">
-              Videos play on the projector only; phones show &quot;Watch the screen&quot;. The video starts when you
-              show the question; the answer timer starts when you open answering.
+              Videos play on the projector only; phones show &quot;Watch the screen&quot;. Showing the question first
+              plays the video alone; the question and options appear when you show them, and the timer starts when you
+              open answering.
+            </p>
+          )}
+          {titleHost && (
+            <p className="flex gap-2 rounded-lg border border-warn/30 bg-warn/10 px-3 py-2 text-xs text-warn">
+              <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+              <span>
+                {titleHost} shows the video&apos;s title on the projector, which can give away the answer. Use a video
+                you uploaded with a neutral title (e.g. &quot;Round 2 Q1&quot;), or choose &quot;File on the projector
+                computer&quot;, which shows no title.
+              </span>
             </p>
           )}
 

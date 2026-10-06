@@ -182,7 +182,14 @@ function YouTubeMedia({
 
   // Fixed per video: changing the iframe address would reload the player, so later play/pause
   // changes go through postMessage instead.
-  const [src] = useState(() => (playback?.playing ? `${embedUrl}&autoplay=1${muted ? '&mute=1' : ''}` : embedUrl));
+  const [src] = useState(() => {
+    let url = embedUrl;
+    // Controlled by the console: no player controls, keyboard or annotations, which also cuts the
+    // moments YouTube overlays the video title (it can't be hidden entirely).
+    if (playback) url = url.replace('controls=1', 'controls=0') + '&disablekb=1&iv_load_policy=3&fs=0';
+    if (playback?.playing) url += muted ? '&autoplay=1&mute=1' : '&autoplay=1';
+    return url;
+  });
 
   return (
     <div className={className}>
@@ -193,7 +200,7 @@ function YouTubeMedia({
         allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
         referrerPolicy="strict-origin-when-cross-origin"
         onLoad={() => setTimeout(() => setLoaded(true), 600)}
-        className="size-full border-0"
+        className={cn('size-full border-0', playback && 'pointer-events-none')}
       />
     </div>
   );
